@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZWCD - Search Results</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div class="nav">
+        <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
+        <a class="nav-item" href="/login">Login or Sign up</a>
+    </div>
+
+    <div class="container">
+        <div class="container bugfix">
+            <form id="searchForm" action="/search" method="get" style="margin: 0;">
+                <div style="display: flex">
+                    <input type="search" 
+                           name="q" 
+                           id="searchInput" 
+                           value="{{ query if query else '' }}" 
+                           tabindex="1" 
+                           autocapitalize="off" 
+                           autocomplete="off" 
+                           autocorrect="off" 
+                           spellcheck="false" 
+                           lang="zh" 
+                           placeholder="Type a hanzi, word or sentence" 
+                           class="autofocus" 
+                           autofocus 
+                           required>
+                    
+                    <select id="searchLang" 
+                            name="lang" 
+                            style="flex-grow: 0;flex-shrink: 1;width: auto;margin-left: 0.3rem;" 
+                            class="lang-select">
+                        <option value="english">EN</option>
+                        <option value="chinese" selected>CN</option>
+                    </select>
+                </div>
+                <input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;" tabindex="-1">
+            </form>
+        </div>
+
+        <div id="searchResults">
+            <h2>Search Results</h2>
+            <div id="resultsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Restore language preference
+            const savedLang = localStorage.getItem('search-lang');
+            if (savedLang) {
+                document.getElementById('searchLang').value = savedLang;
+            }
+
+            // Handle language selection changes
+            document.getElementById('searchLang').addEventListener('change', function() {
+                localStorage.setItem('search-lang', this.value);
+            });
+
+            // Get search parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q');
+            const lang = urlParams.get('lang') || 'chinese';
+
+            // If there's a search query, perform the search
+            if (query) {
+                performSearch(query, lang);
+            }
+
+            // Handle form submission
+            document.getElementById('searchForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const query = document.getElementById('searchInput').value.trim();
+                const lang = document.getElementById('searchLang').value;
+                if (query) {
+                    // Update URL without reloading
+                    window.history.pushState({}, '', `/search?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(lang)}`);
+                    performSearch(query, lang);
+                }
+            });
+        });
+
+        // Perform the search via API
+        function performSearch(query, lang) {
+            document.getElementById('searchInput').value = query;
+            document.getElementById('searchLang').value = lang;
+            
+            fetch(`/api/search?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(lang)}`)
+                .then(response => response.json())
+                .then(data => displayResults(data.results))
+                .catch(error => {
+                    console.error('Search error:', error);
+                    document.getElementById('resultsContainer').innerHTML = 
+                        '<p>Error occurred while searching. Please try again.</p><hr>';
+                });
+        }
+
+        // Display search results
+        function displayResults(results) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+            
+            if (!results || results.length === 0) {
+                container.innerHTML = '<p>No results found. Try a different search term.</p><hr>';
+                return;
+            }
+            
+            results.forEach(result => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item';
+                resultDiv.innerHTML = `
+                    <div class="characters">
+                        <span class="traditional">${result.traditional || ''}</span>
+                        ${result.simplified !== result.traditional ? 
+                         `<span class="simplified">${result.simplified || ''}</span>` : ''}
+                    </div>
+                    <div class="pinyin">${result.pinyin || ''}</div>
+                    <ul class="definitions">
+                        ${result.definitions.map(def => `<li>${def || ''}</li>`).join('')}
+                    </ul>
+                    <hr>
+                `;
+                container.appendChild(resultDiv);
+            });
+        }
+    </script>
+
+    <footer class="site-footer">
+        <a href="/about">About</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy-policy">Privacy-policy</a>
+        <a href="/terms-of-use">Terms-of-use</a>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,87 @@
+body {
+    background-color: #2e2e2e;
+    color: #ffffff;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    padding: 0 12%;
+}
+
+footer {
+    font-family: "Times New Roman", Times, serif;
+    text-align: center;
+    font-size: 18px;
+}
+
+footer a {
+    padding: 5px;
+    text-decoration: none;
+    color: #ff4d4d;
+}
+
+footer a:hover {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.nav-logo {
+    display: inline-block;
+    text-decoration: none;
+    color: #ff4d4d;
+}
+
+.nav-item {
+    font-family: "Times New Roman", Times, serif;
+    padding: 40px;
+    text-decoration: none;
+    float: right;
+    text-align: end;
+    position: relative;
+    color: #ff4d4d;
+}
+
+.nav-item:hover {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.autofocus {
+    background-color: #1a1a1a;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    width: 80%;
+    height: 40px;
+    color: #d3d3d3;
+    font-size: 20px;
+    transition: border-color 0.3s ease;
+}
+
+.autofocus:focus {
+    border-color: #ff4d4d;
+    outline: none;
+}
+
+.autofocus option {
+    background-color: #1a1a1a;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    width: 80%;
+    height: 40px;
+    transition: border-color 0.3s ease;
+}
+
+.lang-select {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    width: 80%;
+    height: 40px;
+    transition: border-color 0.3s ease;
+}
+
+.lang-select:focus {
+    border-color: #ff4d4d;
+    outline: none;
+}

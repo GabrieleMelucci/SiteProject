@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZWCD - Chinese Language Support</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="nav">
+        <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
+        <a class="nav-item" href="/login">Login or Sign up</a>
+    </div>
+    
+    <div class="container bugfix">
+        <form id="mainSearchForm" action="/search" method="get" style="margin: 0;">
+            <div style="display: flex">
+                <input type="search" 
+                       name="q" 
+                       id="mainSearchInput" 
+                       value="" 
+                       tabindex="1"
+                       autocapitalize="off" 
+                       autocomplete="off" 
+                       autocorrect="off" 
+                       spellcheck="false" 
+                       lang="zh" 
+                       placeholder="Type a hanzi, word or sentence" 
+                       class="autofocus" 
+                       autofocus
+                       required>
+                
+                <select id="mainSearchLang" 
+                        name="lang" 
+                        style="flex-grow: 0;flex-shrink: 1;width: auto;margin-left: 0.3rem;" 
+                        class="lang-select">
+                    <option value="english">EN</option>
+                    <option value="chinese" selected>CN</option>
+                </select>
+            </div>
+            <input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;" tabindex="-1">
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Restore language preference
+            const savedLang = localStorage.getItem('search-lang');
+            if (savedLang) {
+                document.getElementById('mainSearchLang').value = savedLang;
+            }
+
+            // Handle language selection changes
+            document.getElementById('mainSearchLang').addEventListener('change', function() {
+                localStorage.setItem('search-lang', this.value);
+            });
+
+            // Handle form submission
+            document.getElementById('mainSearchForm').addEventListener('submit', function(e) {
+                const query = document.getElementById('mainSearchInput').value.trim();
+                if (!query) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+
+    <hr class="bottom">
+    <footer class="site-footer">
+        <a href="/about">About</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/privacy-policy">Privacy-policy</a>
+        <a href="/terms-of-use">Terms-of-use</a>
+    </footer>
+</body>
+</html>
