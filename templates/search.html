@@ -122,7 +122,8 @@
                         ${result.simplified !== result.traditional ? 
                         `<div><strong>Simplified: </strong><span class="simplified">${result.simplified || ''}</span></div>` : ''}
                     </div>
-                    <div class="pinyin"><strong>Pinyin: </strong>${result.pinyin || ''}</div>
+                    <div class="pinyin"><br><strong>Pinyin: </strong>${result.pinyin || ''}</div>
+                    <br>
                     <ul class="definitions">
                         ${result.definitions.map(def => `<li>${def || ''}</li>`).join('')}
                     </ul>

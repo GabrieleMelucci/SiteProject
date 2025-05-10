@@ -1,3 +1,4 @@
+/* ===== BASE STYLES ===== */
 body {
     background-color: #2e2e2e;
     color: #ffffff;
@@ -6,6 +7,7 @@ body {
     padding: 0 12%;
 }
 
+/* ===== FOOTER STYLES ===== */
 footer {
     font-family: "Times New Roman", Times, serif;
     text-align: center;
@@ -21,9 +23,9 @@ footer a {
 footer a:hover {
     background-color: #1e1e1e;
     color: #ffffff;
-    text-decoration: none;
 }
 
+/* ===== NAVIGATION STYLES ===== */
 .nav-logo {
     display: inline-block;
     text-decoration: none;
@@ -43,10 +45,10 @@ footer a:hover {
 .nav-item:hover {
     background-color: #1e1e1e;
     color: #ffffff;
-    text-decoration: none;
 }
 
-.autofocus {
+/* ===== FORM ELEMENTS ===== */
+.autofocus, .lang-select {
     background-color: #1a1a1a;
     border-radius: 5px;
     border: 2px solid transparent;
@@ -55,33 +57,159 @@ footer a:hover {
     color: #d3d3d3;
     font-size: 20px;
     transition: border-color 0.3s ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
 }
 
-.autofocus:focus {
+.autofocus:focus, .lang-select:focus {
     border-color: #ff4d4d;
     outline: none;
-}
-
-.autofocus option {
-    background-color: #1a1a1a;
-    border-radius: 5px;
-    border: 2px solid transparent;
-    width: 80%;
-    height: 40px;
-    transition: border-color 0.3s ease;
 }
 
 .lang-select {
-    background-color: #1a1a1a;
-    color: #ffffff;
-    border-radius: 5px;
-    border: 2px solid transparent;
-    width: 80%;
-    height: 40px;
-    transition: border-color 0.3s ease;
+    padding: 0px 10px;
 }
 
-.lang-select:focus {
+/* ===== SEARCH PAGE STYLES ===== */
+.search-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    color: #ff4d4d;
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 30px;
+    font-family: "Times New Roman", Times, serif;
+}
+
+/* Search box components */
+.search-box {
+    display: flex;
+    margin-bottom: 30px;
+    gap: 10px;
+}
+
+.search-input {
+    flex-grow: 1;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border: 2px solid #3e3e3e;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
     border-color: #ff4d4d;
     outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.2);
+}
+
+.search-button {
+    padding: 12px 25px;
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.search-button:hover {
+    background-color: #ff3333;
+    transform: translateY(-2px);
+}
+
+/* Search results styling */
+.results-container {
+    margin-top: 20px;
+}
+
+.result-count {
+    color: #d3d3d3;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+.result-item {
+    background-color: #1e1e1e;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-left: 4px solid #ff4d4d;
+    transition: all 0.3s ease;
+}
+
+.result-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Character display row */
+.character-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 15px;
+}
+
+.simplified, .traditional {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.pinyin {
+    color: #ff9999;
+    font-size: 1.2rem;
+}
+
+.definitions {
+    margin-top: 10px;
+}
+
+.definition {
+    display: inline-block;
+    background-color: #2a2a2a;
+    padding: 5px 10px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    border-radius: 3px;
+    font-size: 0.9rem;
+}
+
+/* Error message styling */
+.error-message {
+    color: #ff6b6b;
+    background-color: #2a1a1a;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border-left: 4px solid #ff4d4d;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 0 5%;
+    }
+    
+    .nav-item {
+        padding: 20px;
+    }
+    
+    .search-box {
+        flex-direction: column;
+    }
+    
+    .character-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
 }
