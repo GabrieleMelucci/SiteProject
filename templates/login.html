@@ -4,18 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZWCD - Chinese Language Support</title>
+    <title>Login - ZWCD</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
-    
     <div class="nav">
         <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
     </div>
 
-    <hr class="bottom">
-    <!-- Footer -->
+    <div class="login-container">
+        <h2>Login</h2>
+        <form action="{{ url_for('login') }}" method="POST">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">Login</button>
+        </form>
+        <p>Don't have an account? <a href="{{ url_for('login_bp.register') }}">Register here</a></p>
+    </div>
+
     <footer class="site-footer">
         <a href="/about">About</a>
         <a href="/changelog">Changelog</a>

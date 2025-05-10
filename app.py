@@ -1,8 +1,25 @@
 from flask import Flask, render_template
-from src.search import search_bp 
+from src.search import search_bp
+from src.login import login_bp, login_manager  # Import login_manager from login.py
+from src.model import db
 
 app = Flask(__name__)
 
+# Configure the SQLite database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'  # Imposta il percorso del DB SQLite
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disabilita il tracking delle modifiche (ottimizzazione)
+app.config['SECRET_KEY'] = 'supersecretkey'  # Cambia questa chiave con una chiave segreta sicura
+
+
+
+# Initialize the database and the LoginManager
+db.init_app(app)
+login_manager.init_app(app)  # Initialize login_manager here
+
+# Register the login blueprint
+app.register_blueprint(login_bp, url_prefix='/auth')
+
+# Register other blueprints (if any)
 app.register_blueprint(search_bp, url_prefix='/api')
 
 @app.route('/')
