@@ -64,7 +64,7 @@ with open('src/cedict_ts.u8', 'r', encoding='utf-8') as file:
 
         #If you want to save to a database as JSON objects, create a class Word in the Models file of your Django project:
 
-        # print("Saving to database (this may take a few minutes) . . .")
+        print("Saving to database (this may take a few minutes) . . .")
         # for one_dict in list_of_dicts:
         #     new_word = Word(traditional = one_dict["traditional"], simplified = one_dict["simplified"], english = one_dict["english"], pinyin = one_dict["pinyin"], hsk = one_dict["hsk"])
         #     new_word.save()

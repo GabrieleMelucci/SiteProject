@@ -26,7 +26,7 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         
-        flash("Registrazione avvenuta con successo!", "success")
+        flash("Sign up successful.", "success")
         return redirect(url_for('login_bp.login'))
 
     return render_template('register.html')
@@ -42,10 +42,10 @@ def login():
         
         if user and check_password_hash(user.password, password):
             login_user(user)
-            flash("Login avvenuto con successo!", "success")
+            flash("Login successful.", "success")
             return redirect(url_for('home'))  # Redirect to the homepage after
         else:
-            flash("Credenziali errate, riprova!", "danger")
+            flash("Wrong username or password, reinsert your credentials.", "danger")
 
     return render_template('login.html')
 
@@ -54,5 +54,5 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash("Sei stato disconnesso", "success")
+    flash("You have been disconnected.", "success")
     return redirect(url_for('login_bp.login'))

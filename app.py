@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 from src.search import search_bp
-from src.login import login_bp, login_manager  # Import login_manager from login.py
+from src.login import login_bp, login_manager
 from src.model import db
 
 app = Flask(__name__)
