@@ -118,11 +118,11 @@
                 resultDiv.className = 'result-item';
                 resultDiv.innerHTML = `
                     <div class="characters">
-                        <span class="traditional">${result.traditional || ''}</span>
+                        <div><strong>Traditional: </strong><span class="traditional">${result.traditional || ''}</span></div>
                         ${result.simplified !== result.traditional ? 
-                         `<span class="simplified">${result.simplified || ''}</span>` : ''}
+                        `<div><strong>Simplified: </strong><span class="simplified">${result.simplified || ''}</span></div>` : ''}
                     </div>
-                    <div class="pinyin">${result.pinyin || ''}</div>
+                    <div class="pinyin"><strong>Pinyin: </strong>${result.pinyin || ''}</div>
                     <ul class="definitions">
                         ${result.definitions.map(def => `<li>${def || ''}</li>`).join('')}
                     </ul>

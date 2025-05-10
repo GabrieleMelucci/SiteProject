@@ -77,7 +77,7 @@ def search_word():
                 if ratio > best_ratio:
                     best_ratio = ratio
         
-        if best_ratio > 0.3:
+        if best_ratio > 0.8:
             results.append({
                 'traditional': entry['traditional'],
                 'simplified': entry['simplified'],
