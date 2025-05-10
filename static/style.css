@@ -1,6 +1,6 @@
 /* ===== BASE STYLES ===== */
 body {
-    background-color: #2e2e2e;
+    background-color: #232323;
     color: #ffffff;
     margin: 0;
     font-family: Arial, sans-serif;
@@ -16,35 +16,67 @@ footer {
 
 footer a {
     padding: 5px;
+    position: relative;
     text-decoration: none;
-    color: #ff4d4d;
+    color: #C1423F;
 }
 
+footer a::after{
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0px;
+    left: 5%;
+    background-color: #ffffff;
+    transition: width 0.3s ease, left 0.3s ease; /* Animazione fluida */
+}
+
+
 footer a:hover {
-    background-color: #1e1e1e;
     color: #ffffff;
+}
+
+footer a:hover::after {
+    width: 90%; 
 }
 
 /* ===== NAVIGATION STYLES ===== */
 .nav-logo {
     display: inline-block;
     text-decoration: none;
-    color: #ff4d4d;
+    color: #C1423F;
 }
 
 .nav-item {
     font-family: "Times New Roman", Times, serif;
-    padding: 40px;
+    font-size: 120%;
     text-decoration: none;
     float: right;
     text-align: end;
     position: relative;
-    color: #ff4d4d;
+    color: #C1423F;
+    bottom: -40px;
+    padding: 10px;
+}
+
+.nav-item::after{
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0px;
+    left: 5%;
+    background-color: #ffffff;
+    transition: width 0.3s ease, left 0.3s ease;
 }
 
 .nav-item:hover {
-    background-color: #1e1e1e;
     color: #ffffff;
+}
+
+.nav-item:hover::after {
+    width: 90%;
 }
 
 /* ===== FORM ELEMENTS ===== */
@@ -63,7 +95,7 @@ footer a:hover {
 }
 
 .autofocus:focus, .lang-select:focus {
-    border-color: #ff4d4d;
+    border-color: #C1423F;
     outline: none;
 }
 
@@ -79,7 +111,7 @@ footer a:hover {
 }
 
 .page-title {
-    color: #ff4d4d;
+    color: #C1423F;
     font-size: 2.5rem;
     text-align: center;
     margin-bottom: 30px;
@@ -105,14 +137,14 @@ footer a:hover {
 }
 
 .search-input:focus {
-    border-color: #ff4d4d;
+    border-color: #C1423F;
     outline: none;
     box-shadow: 0 0 0 2px rgba(255, 77, 77, 0.2);
 }
 
 .search-button {
     padding: 12px 25px;
-    background-color: #ff4d4d;
+    background-color: #C1423F;
     color: white;
     border: none;
     border-radius: 5px;
@@ -142,7 +174,7 @@ footer a:hover {
     border-radius: 5px;
     padding: 20px;
     margin-bottom: 15px;
-    border-left: 4px solid #ff4d4d;
+    border-left: 4px solid #C1423F;
     transition: all 0.3s ease;
 }
 
@@ -190,7 +222,7 @@ footer a:hover {
     padding: 15px;
     border-radius: 5px;
     margin: 20px 0;
-    border-left: 4px solid #ff4d4d;
+    border-left: 4px solid #C1423F;
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
