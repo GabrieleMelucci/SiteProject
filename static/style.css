@@ -7,6 +7,11 @@ body {
     padding: 0 12%;
 }
 
+#font{
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    color: #ffffff;
+}
+
 /* ===== FOOTER STYLES ===== */
 footer {
     font-family: "Times New Roman", Times, serif;
@@ -97,6 +102,37 @@ footer a:hover::after {
 .autofocus:focus, .lang-select:focus {
     border-color: #C1423F;
     outline: none;
+}
+
+#username{
+    position: relative;
+    left: 10px;
+    width:40%;
+}
+
+
+#password{
+    position: relative;
+    left: 14px;
+    width:40%;
+}
+
+#login{
+    position: relative;
+    left: 0px;
+    width:10%;
+}
+
+#login:hover{
+    background-color: #aaaaaa;
+    color: #000000;
+    cursor: pointer;
+}
+
+#login:focus{
+    background-color: #000000;
+    color: #aaaaaa;
+    cursor: pointer;
 }
 
 .lang-select {
