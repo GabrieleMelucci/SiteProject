@@ -1,0 +1,2 @@
+fn(axum::extract::State<(Pool<ConnectionManager<SqliteConnection>>, Arc<Vec<DictEntry>>)>, Form<LoginForm>) -> impl Future<Output = Result<Redirect, LoginError>> {register}
+fn(axum::extract::State<(Pool<ConnectionManager<SqliteConnection>>, Arc<Vec<DictEntry>>)>, Form<LoginForm>) -> impl Future<Output = Result<Redirect, LoginError>> {register}: Handler<_, _>

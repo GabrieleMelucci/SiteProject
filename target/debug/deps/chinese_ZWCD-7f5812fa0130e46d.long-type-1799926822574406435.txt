@@ -1,0 +1,1 @@
+fn(tower_sessions::Session) -> impl Future<Output = Result<Redirect, LoginError>> {logout}: Handler<_, _>
