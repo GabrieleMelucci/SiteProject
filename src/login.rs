@@ -27,6 +27,22 @@ pub enum LoginError {
     SessionError(String),
 }
 
+impl IntoResponse for LoginError {
+    fn into_response(self) -> axum::response::Response {
+        match self {
+            LoginError::InvalidCredentials => (
+                axum::http::StatusCode::UNAUTHORIZED,
+                "Invalid credentials",
+            ),
+            _ => (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error",
+            ),
+        }
+        .into_response()
+    }
+}
+
 impl From<tower_sessions::session::Error> for LoginError {
     fn from(err: tower_sessions::session::Error) -> Self {
         LoginError::SessionError(err.to_string())
@@ -49,6 +65,7 @@ pub async fn login_page(Extension(templates): Extension<Arc<Tera>>) -> impl Into
     render_template(&templates, "login.html", None)
 }
 
+#[axum::debug_handler]
 pub async fn login(
     State((pool, _)): State<(DbPool, Arc<Vec<crate::parser::DictEntry>>)>,
     Form(form): Form<LoginForm>,
@@ -79,6 +96,7 @@ pub fn render_template(
     Html(tera.render(template_name, &ctx).unwrap())
 }
 
+#[axum::debug_handler]
 pub async fn register(
     State((pool, _)): State<(DbPool, Arc<Vec<crate::parser::DictEntry>>)>,
     Form(form): Form<LoginForm>,
@@ -96,6 +114,7 @@ pub async fn register(
     Ok(Redirect::to("/auth/login"))
 }
 
+#[axum::debug_handler]
 pub async fn logout(session: Session) -> Result<Redirect, LoginError> {
     session.flush().await?;
     Ok(Redirect::to("/"))

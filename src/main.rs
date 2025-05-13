@@ -1,7 +1,7 @@
 use axum::{
     routing::{get, post},
     Router,
-    response::{IntoResponse, Html},
+    response::IntoResponse,
     extract::Extension,
 };
 use tower_sessions::{SessionManagerLayer, MemoryStore, Expiry};
@@ -21,7 +21,7 @@ type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
 #[tokio::main]
 async fn main() {
-    // Configurazione database
+    // Database configuration
     dotenv::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "sqlite://site.db".into());
@@ -31,10 +31,10 @@ async fn main() {
         .build(manager)
         .expect("Failed to create DB pool");
 
-    // Caricamento dati dizionario
+    // Dictionary data loading
     let dict_data = Arc::new(parser::parse_cedict());
 
-    // Configurazione templates
+    // Templates configuration
     let templates = match Tera::new("templates/**/*.html") {
         Ok(t) => t,
         Err(e) => {
@@ -44,35 +44,35 @@ async fn main() {
     };
     let templates = Arc::new(templates);
 
-    // Configurazione sessioni
+    // Sessions configuration
     let session_store = MemoryStore::default();
     let session_layer = SessionManagerLayer::new(session_store)
         .with_expiry(Expiry::OnInactivity(Duration::days(1)))
         .with_secure(false);
 
-    // Creazione router
+    // Create router
     let app = Router::new()
-        // Route statiche
+        // Static routes
         .route("/", get(home))
         .route("/about", get(about))
         .route("/changelog", get(changelog))
         .route("/privacy-policy", get(privacy_policy))
         .route("/terms-of-use", get(terms_of_use))
         
-        // Route autenticazione
+        // Authentication routes
         .route("/auth/register", post(login::register))
         .route("/auth/login", post(login::login))
         .route("/auth/logout", get(login::logout))
         
-        // Route API
+        // API routes
         .route("/api/search", get(search::search))
         
-        // Stato condiviso
+        // Shared state
         .with_state((pool, dict_data))
         .layer(Extension(templates))
         .layer(session_layer);
 
-    // Avvio server
+    // Start server
     let listener = match TcpListener::bind("127.0.0.1:5000").await {
         Ok(l) => l,
         Err(e) => {
@@ -89,7 +89,7 @@ async fn main() {
     }
 }
 
-// Handler per le pagine statiche
+// Handlers for static pages
 async fn home(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
     login::render_template(&templates, "sitechinese.html", None)
 }
