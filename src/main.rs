@@ -4,12 +4,14 @@ use axum::{
     response::IntoResponse,
     extract::Extension,
 };
+use tower_http::services::ServeDir;
 use tower_sessions::{SessionManagerLayer, MemoryStore, Expiry};
 use diesel::{SqliteConnection, r2d2::{ConnectionManager, Pool}};
 use tera::Tera;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use time::Duration;
+use axum::routing::get_service;
 
 mod login;
 mod search;
@@ -54,6 +56,8 @@ async fn main() {
     let app = Router::new()
         // Static routes
         .route("/", get(home))
+        .route("/search", get(search))
+        .route("/login", get(login))
         .route("/about", get(about))
         .route("/changelog", get(changelog))
         .route("/privacy-policy", get(privacy_policy))
@@ -66,6 +70,8 @@ async fn main() {
         
         // API routes
         .route("/api/search", get(search::search))
+
+        .nest_service("/static", get_service(ServeDir::new("static")))
         
         // Shared state
         .with_state((pool, dict_data))
@@ -92,6 +98,14 @@ async fn main() {
 // Handlers for static pages
 async fn home(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
     login::render_template(&templates, "sitechinese.html", None)
+}
+
+async fn login(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    login::render_template(&templates, "login.html", None)
+}
+
+async fn search(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    login::render_template(&templates, "search.html", None)
 }
 
 async fn about(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {

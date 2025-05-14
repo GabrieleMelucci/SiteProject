@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Extension, Form, State},
+    extract::{Form, State},
     response::{IntoResponse, Redirect, Html},
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
@@ -61,9 +61,9 @@ pub struct LoginForm {
     pub password: String,
 }
 
-pub async fn login_page(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+/*pub async fn login_page(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
     render_template(&templates, "login.html", None)
-}
+}*/
 
 #[axum::debug_handler]
 pub async fn login(
