@@ -10,7 +10,10 @@ pub struct DictEntry {
 }
 
 pub fn parse_cedict() -> Vec<DictEntry> {
-    let content = fs::read_to_string("cedict_ts.u8").unwrap();
+    // Gestiamo l'errore con expect(), che panica se il file non può essere letto
+    let content = fs::read_to_string("src/cedict_ts.u8")
+        .expect("Errore nella lettura del file cedict_ts.u8");
+
     let mut entries = Vec::new();
 
     for line in content.lines() {

@@ -12,7 +12,7 @@ use thiserror::Error;
 use crate::{
     schema::users::dsl::{users, username},
     model::{User, NewUser},
-    DbPool
+    DbPool,
 };
 
 #[derive(Error, Debug)]
@@ -68,8 +68,8 @@ pub async fn login_page(Extension(templates): Extension<Arc<Tera>>) -> impl Into
 #[axum::debug_handler]
 pub async fn login(
     State((pool, _)): State<(DbPool, Arc<Vec<crate::parser::DictEntry>>)>,
-    Form(form): Form<LoginForm>,
     session: Session,
+    Form(form): Form<LoginForm>,
 ) -> Result<Redirect, LoginError> {
     let mut conn = pool.get().unwrap();
     let user = users
@@ -103,7 +103,7 @@ pub async fn register(
 ) -> Result<Redirect, LoginError> {
     let mut conn = pool.get().unwrap();
     let hashed_password = hash(&form.password, DEFAULT_COST)?;
-    
+
     diesel::insert_into(users)
         .values(&NewUser {
             username: &form.username,
