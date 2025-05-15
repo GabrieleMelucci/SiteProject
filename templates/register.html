@@ -1,33 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - ZWCD</title>
+    <title>Register - ZWCD</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-
 <body>
     <div class="nav">
         <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
     </div>
 
-    <div class="login-container">
-        <h2 id="font">Register</h2>
+    <div class="register-box">
+        <h2 class="form-title">Sign up to ZWCD</h2>
         <form action="/auth/register" method="POST">
-            <label for="email" id="font">E-mail</label>
-            <input type="email" id="email" name="email" required class="autofocus">
-            <br><br>
-            <label for="username" id="font">Username</label>
-            <input type="text" id="username" name="username" required class="autofocus">
-            <br><br>
-            <label for="password" id="font">Password</label>
-            <input type="password" id="password" name="password" required class="autofocus">
-            <br><br>
-            <button type="submit" id="login" class="autofocus">Register</button>
+            <input type="email" placeholder="Email" name="email" required class="form-input">
+            <input type="text" placeholder="Username" name="username" required class="form-input">
+            <input type="password" placeholder="Password" name="password" required class="form-input">
+
+            <button type="submit" class="form-button">Sign Up</button>
         </form>
-        <br><br><br>
+
+        <p class="form-footer">
+            Already have an account? <a href="/login">Login</a>
+        </p>
     </div>
 
     <footer class="site-footer">
@@ -36,7 +32,5 @@
         <a href="/privacy-policy">Privacy-policy</a>
         <a href="/terms-of-use">Terms-of-use</a>
     </footer>
-
 </body>
-
 </html>

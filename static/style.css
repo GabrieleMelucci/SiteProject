@@ -110,7 +110,7 @@ footer a:hover::after {
 }
 
 #email.autofocus{
-    left: 22px;
+    left: 10px;
 }
 
 #username.autofocus{
@@ -119,8 +119,7 @@ footer a:hover::after {
 
 #password.autofocus{
     position: relative;
-    width: 10%;
-    left: 14px;
+    left: 10px;
 }
 
 #login.autofocus{
@@ -285,4 +284,73 @@ footer a:hover::after {
         align-items: flex-start;
         gap: 5px;
     }
+}
+
+.register-box {
+    background-color: #1e1e1e;
+    max-width: 400px;
+    margin: 80px auto;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.form-title {
+    color: #ffffff;
+    margin-bottom: 25px;
+    font-size: 24px;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    background-color: #2a2a2a;
+    border: none;
+    border-radius: 5px;
+    color: #ffffff;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border 0.3s ease;
+}
+
+.form-input:focus {
+    border: 2px solid #C1423F;
+    outline: none;
+}
+
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #d3d3d3;
+    margin: 15px 0;
+    justify-content: start;
+    gap: 10px;
+}
+
+.form-button {
+    background-color: #3498db;
+    border: none;
+    padding: 8px 24px; /* più piccolo */
+    color: white;
+    border-radius: 5px;
+    font-size: 14px; /* più piccolo */
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin: 20px auto 0;
+    display: block; /* permette il centramento */
+}
+
+
+.form-button:hover {
+    background-color: #2980b9;
+}
+
+.form-footer {
+    margin-top: 20px;
+    color: #aaaaaa;
+    font-size: 14px;
 }
