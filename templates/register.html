@@ -14,18 +14,20 @@
     </div>
 
     <div class="login-container">
-        <h2 id="font">Login</h2>
-        <form action="/auth/login" method="POST">
+        <h2 id="font">Register</h2>
+        <form action="/auth/register" method="POST">
+            <label for="email" id="font">E-mail</label>
+            <input type="email" id="email" name="email" required class="autofocus">
+            <br><br>
             <label for="username" id="font">Username</label>
             <input type="text" id="username" name="username" required class="autofocus">
             <br><br>
             <label for="password" id="font">Password</label>
             <input type="password" id="password" name="password" required class="autofocus">
             <br><br>
-            <button type="submit" id="login" class="autofocus">Login</button>
+            <button type="submit" id="login" class="autofocus">Register</button>
         </form>
         <br><br><br>
-        <p>Don't have an account? <a href="/register">Register here</a></p>
     </div>
 
     <footer class="site-footer">

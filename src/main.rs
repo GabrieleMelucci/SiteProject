@@ -58,6 +58,7 @@ async fn main() {
         .route("/", get(home))
         .route("/search", get(search))
         .route("/login", get(login))
+        .route("/register", get(register))
         .route("/about", get(about))
         .route("/changelog", get(changelog))
         .route("/privacy-policy", get(privacy_policy))
@@ -102,6 +103,10 @@ async fn home(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
 
 async fn login(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
     login::render_template(&templates, "login.html", None)
+}
+
+async fn register(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    login::render_template(&templates, "register.html", None)
 }
 
 async fn search(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
