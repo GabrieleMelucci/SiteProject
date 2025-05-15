@@ -40,7 +40,7 @@ pub async fn search(
                 &entry.traditional,
                 &entry.pinyin
             ]),
-            _ => entry.english.iter()
+            _ => entry.definitions.iter()
                 .map(|def| similarity(&normalized, &NORMALIZE_RE.replace_all(def, "")))
                 .fold(0.0, f32::max)
         };

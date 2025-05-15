@@ -61,10 +61,6 @@ pub struct LoginForm {
     pub password: String,
 }
 
-/*pub async fn login_page(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    render_template(&templates, "login.html", None)
-}*/
-
 #[axum::debug_handler]
 pub async fn login(
     State((pool, _)): State<(DbPool, Arc<Vec<crate::parser::DictEntry>>)>,

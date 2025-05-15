@@ -21,7 +21,7 @@
                     <input type="search" 
                            name="q" 
                            id="searchInput" 
-                           value="{{ query | default }}" 
+                           value="{{ query | default(value='') }}"
                            tabindex="1" 
                            autocapitalize="off" 
                            autocomplete="off" 
