@@ -106,7 +106,7 @@ async fn main() {
 
 // Handlers for static pages
 async fn home(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    utils::render_template(&templates, "sitechinese.html", Context::new())
+    utils::render_template(&templates, "ZWCD.html", Context::new())
 }
 
 async fn dashboard(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
