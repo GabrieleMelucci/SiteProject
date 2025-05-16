@@ -1,7 +1,7 @@
 use axum::{
     extract::{Form, State},
-    response::{Html, IntoResponse, Redirect},
-    routing::{get, post},
+    response::{Html, Redirect},
+    routing::{get},
     Router,
 };
 use bcrypt::verify;

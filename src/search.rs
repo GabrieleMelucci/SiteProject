@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use regex::Regex;
 use lazy_static::lazy_static;
+use unidecode::unidecode;
 
 use crate::parser::DictEntry;
 
@@ -39,7 +40,9 @@ pub async fn search(
             "chinese" => max_similarity(&normalized, &[
                 &entry.simplified,
                 &entry.traditional,
-                &PUNCTUATION_RE.replace_all(&entry.pinyin, "").to_lowercase()
+                &PUNCTUATION_RE.replace_all(&entry.pinyin, "").to_lowercase(),
+                // Add pinyin without tones for better matching
+                &remove_tones(&entry.pinyin),
             ]),
             _ => entry.definitions.iter()
                 .map(|def| {
@@ -49,7 +52,7 @@ pub async fn search(
                 .fold(0.0, f32::max)
         };
 
-        if score > 0.5 {  // Lowered threshold for better matching
+        if score > 0.8 {  // Increased threshold to 0.8 for stricter matching
             results.push((entry.clone(), score));
         }
     }
@@ -67,6 +70,14 @@ pub async fn search(
     })
 }
 
+fn remove_tones(pinyin: &str) -> String {
+    unidecode(pinyin)
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_alphabetic())
+        .collect()
+}
+
 fn max_similarity(a: &str, options: &[&str]) -> f32 {
     options.iter()
         .map(|b| similarity(a, b))
@@ -82,12 +93,25 @@ fn similarity(a: &str, b: &str) -> f32 {
         return 1.0;
     }
 
-    // Simple partial matching
+    // Check for partial matches with higher weight
     if b.contains(a) {
-        return 0.8;
+        let ratio = a.len() as f32 / b.len() as f32;
+        return 0.6 + (ratio * 0.4); // Scales between 0.6-1.0 based on match completeness
     }
 
-    // Length-based similarity
+    // Check for reverse partial match
+    if a.contains(b) {
+        let ratio = b.len() as f32 / a.len() as f32;
+        return 0.5 + (ratio * 0.3); // Scales between 0.5-0.8
+    }
+
+    // Calculate Jaro-Winkler similarity for better partial matching
+    let jaro_winkler = strsim::jaro_winkler(a, b);
+    if jaro_winkler > 0.85 {
+        return jaro_winkler as f32;
+    }
+
+    // Length-based similarity as fallback
     let len_sim = 1.0 - ((a.len() as f32 - b.len() as f32).abs() / (a.len() + b.len()) as f32);
-    len_sim * 0.3  // Weighted less than exact matches
+    len_sim * 0.3
 }

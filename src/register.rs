@@ -1,6 +1,6 @@
 use axum::{
     extract::{Form, State},
-    response::{Html, IntoResponse, Redirect},
+    response::{Html, Redirect},
     routing::get,
     Router,
 };
@@ -25,13 +25,18 @@ pub async fn show_register_form(
     Ok(render_template(&tera, "register.html", context))
 }
 
-#[axum::debug_handler]
 pub async fn handle_register(
     State((pool, _tera)): State<(DbPool, Arc<Tera>)>,
     session: tower_sessions::Session,
     Form(form): Form<RegisterForm>,
 ) -> Result<Redirect, AuthError> {
-    form.validate()?;
+    if !form.email.contains('@') {
+        return Err(AuthError::InvalidEmail);
+    }
+    
+    if form.password.len() < 8 {
+        return Err(AuthError::WeakPassword);
+    }
 
     let mut conn = pool.get().map_err(|_| AuthError::SessionError("Failed to get DB connection".into()))?;
 

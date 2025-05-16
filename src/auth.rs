@@ -2,10 +2,11 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use bcrypt::BcryptError;
 use diesel::result::Error as DieselError;
+use serde::{Deserialize};
 use serde_json::{Error as JsonError, json};
 use thiserror::Error;
 use tower_sessions::session::Error as SessionError;
-use validator::ValidationErrors;
+use validator::{Validate, ValidationErrors};
 
 #[derive(Error, Debug)]
 pub enum AuthError {
