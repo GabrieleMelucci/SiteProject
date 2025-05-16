@@ -11,6 +11,7 @@ use crate::parser::DictEntry;
 
 lazy_static! {
     static ref NORMALIZE_RE: Regex = Regex::new(r"[^a-zA-Z\u4e00-\u9fff]").unwrap();
+    static ref PUNCTUATION_RE: Regex = Regex::new(r"[.,;:!?]").unwrap();
 }
 
 #[derive(Debug, Deserialize)]
@@ -38,21 +39,31 @@ pub async fn search(
             "chinese" => max_similarity(&normalized, &[
                 &entry.simplified,
                 &entry.traditional,
-                &entry.pinyin
+                &PUNCTUATION_RE.replace_all(&entry.pinyin, "").to_lowercase()
             ]),
             _ => entry.definitions.iter()
-                .map(|def| similarity(&normalized, &NORMALIZE_RE.replace_all(def, "")))
+                .map(|def| {
+                    let clean_def = NORMALIZE_RE.replace_all(def, "").to_lowercase();
+                    similarity(&normalized, &clean_def)
+                })
                 .fold(0.0, f32::max)
         };
 
-        if score > 0.8 {
-            results.push(entry.clone());
+        if score > 0.5 {  // Lowered threshold for better matching
+            results.push((entry.clone(), score));
         }
     }
 
+    // Sort by score descending
+    results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    let top_results: Vec<DictEntry> = results.into_iter()
+        .take(15)
+        .map(|(entry, _)| entry)
+        .collect();
+
     Json(SearchResult {
         query: params.q,
-        results: results.into_iter().take(15).collect(),
+        results: top_results,
     })
 }
 
@@ -63,9 +74,20 @@ fn max_similarity(a: &str, options: &[&str]) -> f32 {
 }
 
 fn similarity(a: &str, b: &str) -> f32 {
-    if a == b {
-        1.0
-    } else {
-        0.0
+    if a.is_empty() || b.is_empty() {
+        return 0.0;
     }
+
+    if a == b {
+        return 1.0;
+    }
+
+    // Simple partial matching
+    if b.contains(a) {
+        return 0.8;
+    }
+
+    // Length-based similarity
+    let len_sim = 1.0 - ((a.len() as f32 - b.len() as f32).abs() / (a.len() + b.len()) as f32);
+    len_sim * 0.3  // Weighted less than exact matches
 }

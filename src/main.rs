@@ -1,23 +1,28 @@
 use axum::{
-    routing::{get, post},
-    Router,
-    response::IntoResponse,
     extract::Extension,
+    response::{IntoResponse, Redirect},
+    routing::{get, get_service},
+    Router,
 };
-use tower_http::services::ServeDir;
-use tower_sessions::{SessionManagerLayer, MemoryStore, Expiry};
-use diesel::{SqliteConnection, r2d2::{ConnectionManager, Pool}};
-use tera::Tera;
+use diesel::{
+    r2d2::{ConnectionManager, Pool},
+    SqliteConnection,
+};
 use std::sync::Arc;
-use tokio::net::TcpListener;
+use tera::{Tera, Context};
 use time::Duration;
-use axum::routing::get_service;
+use tokio::net::TcpListener;
+use tower_http::services::ServeDir;
+use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 
+mod auth;
 mod login;
-mod search;
 mod model;
 mod parser;
+mod register;
 mod schema;
+mod search;
+mod utils;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -25,9 +30,8 @@ type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 async fn main() {
     // Database configuration
     dotenv::dotenv().ok();
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite://site.db".into());
-    
+    let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://site.db".into());
+
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
     let pool = Pool::builder()
         .build(manager)
@@ -52,30 +56,34 @@ async fn main() {
         .with_expiry(Expiry::OnInactivity(Duration::days(1)))
         .with_secure(false);
 
-    // Create router
+    // API router
+    let api_router = Router::new()
+        .route("/search", get(search::search))
+        .with_state((pool.clone(), dict_data));
+
+    // Auth router
+    let auth_router = Router::new()
+        .merge(login::auth_router(pool.clone(), templates.clone()))
+        .merge(register::auth_router(pool.clone(), templates.clone()))
+        .route("/logout", get(handle_logout));
+
+    // Main application router
     let app = Router::new()
-        // Static routes
+        // Static pages
         .route("/", get(home))
-        .route("/search", get(search))
-        .route("/login", get(login))
-        .route("/register", get(register))
         .route("/about", get(about))
         .route("/changelog", get(changelog))
         .route("/privacy-policy", get(privacy_policy))
         .route("/terms-of-use", get(terms_of_use))
-        
-        // Authentication routes
-        .route("/auth/register", post(login::register))
-        .route("/auth/login", post(login::login))
-        .route("/auth/logout", get(login::logout))
-        
+        // Dashboard
+        .route("/dashboard", get(dashboard))
+        // Auth routes
+        .nest("/auth", auth_router)
         // API routes
-        .route("/api/search", get(search::search))
-
+        .nest("/api", api_router)
+        // Static files
         .nest_service("/static", get_service(ServeDir::new("static")))
-        
-        // Shared state
-        .with_state((pool, dict_data))
+        // Shared state and layers
         .layer(Extension(templates))
         .layer(session_layer);
 
@@ -89,7 +97,7 @@ async fn main() {
     };
 
     println!("Server running on http://localhost:5000");
-    
+
     if let Err(e) = axum::serve(listener, app).await {
         eprintln!("Server error: {}", e);
         std::process::exit(1);
@@ -98,33 +106,31 @@ async fn main() {
 
 // Handlers for static pages
 async fn home(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    login::render_template(&templates, "sitechinese.html", None)
+    utils::render_template(&templates, "sitechinese.html", Context::new())
 }
 
-async fn login(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    login::render_template(&templates, "login.html", None)
-}
-
-async fn register(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    login::render_template(&templates, "register.html", None)
-}
-
-async fn search(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    login::render_template(&templates, "search.html", None)
+async fn dashboard(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    utils::render_template(&templates, "dashboard.html", Context::new())
 }
 
 async fn about(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    login::render_template(&templates, "about.html", None)
+    utils::render_template(&templates, "about.html", Context::new())
 }
 
 async fn changelog(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    login::render_template(&templates, "changelog.html", None)
+    utils::render_template(&templates, "changelog.html", Context::new())
 }
 
 async fn privacy_policy(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    login::render_template(&templates, "privacy-policy.html", None)
+    utils::render_template(&templates, "privacy-policy.html", Context::new())
 }
 
 async fn terms_of_use(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
-    login::render_template(&templates, "terms-of-use.html", None)
+    utils::render_template(&templates, "terms-of-use.html", Context::new())
+}
+
+// Auth handlers
+async fn handle_logout(session: tower_sessions::Session) -> Result<Redirect, auth::AuthError> {
+    session.delete().await?;
+    Ok(Redirect::to("/"))
 }

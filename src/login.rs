@@ -1,73 +1,38 @@
 use axum::{
     extract::{Form, State},
-    response::{IntoResponse, Redirect, Html},
+    response::{Html, IntoResponse, Redirect},
+    routing::{get, post},
+    Router,
 };
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::verify;
 use diesel::prelude::*;
-use tera::Tera;
 use std::sync::Arc;
-use tower_sessions::Session;
-use thiserror::Error;
+use tera::{Tera, Context};
 
 use crate::{
     schema::users::dsl::{users, email},
-    model::{User, NewUser},
-    DbPool,
+    model::User,
+    DbPool, 
+    auth::{AuthError, LoginForm, set_user_session},
+    utils::render_template,
 };
 
-#[derive(Error, Debug)]
-pub enum LoginError {
-    #[error("Invalid credentials")]
-    InvalidCredentials,
-    #[error("Database error")]
-    DatabaseError(#[from] diesel::result::Error),
-    #[error("Hashing error")]
-    HashingError(#[from] bcrypt::BcryptError),
-    #[error("Session error: {0}")]
-    SessionError(String),
-}
-
-impl IntoResponse for LoginError {
-    fn into_response(self) -> axum::response::Response {
-        match self {
-            LoginError::InvalidCredentials => (
-                axum::http::StatusCode::UNAUTHORIZED,
-                "Invalid credentials",
-            ),
-            _ => (
-                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                "Internal server error",
-            ),
-        }
-        .into_response()
-    }
-}
-
-impl From<tower_sessions::session::Error> for LoginError {
-    fn from(err: tower_sessions::session::Error) -> Self {
-        LoginError::SessionError(err.to_string())
-    }
-}
-
-impl From<serde_json::Error> for LoginError {
-    fn from(err: serde_json::Error) -> Self {
-        LoginError::SessionError(err.to_string())
-    }
-}
-
-#[derive(serde::Deserialize)]
-pub struct LoginForm {
-    pub email: String,
-    pub password: String,
+pub async fn show_login_form(
+    State((_pool, tera)): State<(DbPool, Arc<Tera>)>
+) -> Result<Html<String>, AuthError> {
+    let mut context = Context::new();
+    context.insert("title", "Login");
+    Ok(render_template(&tera, "login.html", context))
 }
 
 #[axum::debug_handler]
-pub async fn login(
-    State((pool, _)): State<(DbPool, Arc<Vec<crate::parser::DictEntry>>)>,
-    session: Session,
+pub async fn handle_login(
+    State((pool, _tera)): State<(DbPool, Arc<Tera>)>,
+    session: tower_sessions::Session,
     Form(form): Form<LoginForm>,
-) -> Result<Redirect, LoginError> {
-    let mut conn = pool.get().unwrap();
+) -> Result<Redirect, AuthError> {
+    let mut conn = pool.get().map_err(|_| AuthError::SessionError("Failed to get DB connection".into()))?;
+    
     let user = users
         .filter(email.eq(&form.email))
         .first::<User>(&mut conn)
@@ -75,43 +40,16 @@ pub async fn login(
 
     if let Some(user) = user {
         if verify(&form.password, &user.password)? {
-            session.insert("user_id", user.user_id).await?;
-            return Ok(Redirect::to("/"));
+            set_user_session(&session, user.user_id, &user.email).await?;
+            return Ok(Redirect::to("/dashboard"));
         }
     }
 
-    Err(LoginError::InvalidCredentials)
+    Err(AuthError::InvalidCredentials)
 }
 
-pub fn render_template(
-    tera: &Tera,
-    template_name: &str,
-    context: Option<tera::Context>,
-) -> Html<String> {
-    let ctx = context.unwrap_or_default();
-    Html(tera.render(template_name, &ctx).unwrap())
-}
-
-#[axum::debug_handler]
-pub async fn register(
-    State((pool, _)): State<(DbPool, Arc<Vec<crate::parser::DictEntry>>)>,
-    Form(form): Form<LoginForm>,
-) -> Result<Redirect, LoginError> {
-    let mut conn = pool.get().unwrap();
-    let hashed_password = hash(&form.password, DEFAULT_COST)?;
-
-    diesel::insert_into(users)
-        .values(&NewUser {
-            email: &form.email,
-            password: &hashed_password,
-        })
-        .execute(&mut conn)?;
-
-    Ok(Redirect::to("/auth/login"))
-}
-
-#[axum::debug_handler]
-pub async fn logout(session: Session) -> Result<Redirect, LoginError> {
-    session.flush().await?;
-    Ok(Redirect::to("/"))
+pub fn auth_router(pool: DbPool, tera: Arc<Tera>) -> Router {
+    Router::new()
+        .route("/login", get(show_login_form).post(handle_login))
+        .with_state((pool, tera))
 }
