@@ -15,7 +15,7 @@
 
     <div class="login-container">
         <h2 id="font">Login</h2>
-        <form action="{{ url_for('login') }}" method="POST">
+        <form action="/auth/login" method="POST">
             <label for="username" id="font">Username</label>
             <input type="text" id="username" name="username" required class="autofocus">
             <br><br>
@@ -25,7 +25,7 @@
             <button type="submit" id="login" class="autofocus">Login</button>
         </form>
         <br><br><br>
-        <p>Don't have an account? <a href="{{ url_for('login_bp.register') }}">Register here</a></p>
+        <p>Don't have an account? <a href="/register">Register here</a></p>
     </div>
 
     <footer class="site-footer">
