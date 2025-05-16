@@ -1,2 +1,4 @@
-target/
-target/debug/
+# Rust build artifacts
+target/**/*
+**/*.rs.bk
+Cargo.lock
