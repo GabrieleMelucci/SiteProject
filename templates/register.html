@@ -1,35 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Register - ZWCD</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+
+  <body>
     <div class="nav">
-        <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
+      <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
     </div>
 
     <div class="register-box">
-        <h2 class="form-title">Sign up to ZWCD</h2>
-        <form action="/auth/register" method="POST">
-            <input type="email" placeholder="Email" name="email" required class="form-input">
-            <input type="password" placeholder="Password" name="password" required class="form-input">
-            <input type="password" placeholder="Repeat Password" name="password" required class="form-input">
-            <button type="submit" class="form-button">Sign Up</button>
-        </form>
+      <h2 class="form-title">Sign up to ZWCD</h2>
+      <form action="/auth/register" method="POST" id="registrationForm">
+        <input type="email" placeholder="Email" name="email" id="email" required class="form-input" />
+        <input type="password" placeholder="Password" name="password" id="password" required class="form-input" />
+        <input type="password" placeholder="Repeat password" name="repeatPassword" id="repeatPassword" required class="form-input" />
+        <span id="passwordMatchError" style="color: red; display: none;">Passwords do not match!</span>
+        <button type="submit" class="form-button">Sign Up</button>
+      </form>
 
-        <p class="form-footer">
-            Already have an account? <a href="/login">Login</a>
-        </p>
+      <script>
+        let timeoutId
+        let firstValidationDone = false 
+
+        //Real time validation for passwords mismatch
+        document.getElementById('repeatPassword').addEventListener('input', function () {
+          const password = document.getElementById('password').value
+          const repeatPassword = this.value
+          const errorElement = document.getElementById('passwordMatchError')
+        
+          if (!firstValidationDone) {
+            errorElement.style.color = 'transparent'
+            errorElement.style.display = 'block'
+          }
+        
+          clearTimeout(timeoutId)
+    
+          timeoutId = setTimeout(() => {
+            errorElement.style.color = 'red'
+            errorElement.style.display = password !== repeatPassword ? 'block' : 'none'
+            firstValidationDone = true
+          }, 1000)
+        })
+        
+        // Form submission check for mismatched passwords
+        document.getElementById('registrationForm').addEventListener('submit', function (event) {
+          const password = document.getElementById('password').value
+          const repeatPassword = document.getElementById('repeatPassword').value
+        
+          if (password !== repeatPassword) {
+            document.getElementById('passwordMatchError').style.display = 'block'
+            document.getElementById('passwordMatchError').style.color = 'red'
+            event.preventDefault()
+          }
+        })
+      </script>
+
+      <p class="form-footer">
+        Already have an account? <a href="/login">Login</a>
+      </p>
     </div>
 
     <footer class="site-footer">
-        <a href="/about">About</a>
-        <a href="/changelog">Changelog</a>
-        <a href="/privacy-policy">Privacy-policy</a>
-        <a href="/terms-of-use">Terms-of-use</a>
+      <a href="/about">About</a>
+      <a href="/changelog">Changelog</a>
+      <a href="/privacy-policy">Privacy-policy</a>
+      <a href="/terms-of-use">Terms-of-use</a>
     </footer>
-</body>
+  </body>
 </html>
