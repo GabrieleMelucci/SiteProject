@@ -104,16 +104,12 @@ footer a:hover::after {
     outline: none;
 }
 
-#email.autofocus, #username.autofocus, #password.autofocus{
+#email.autofocus, #password.autofocus{
     position: relative;
     width:40%;
 }
 
 #email.autofocus{
-    left: 10px;
-}
-
-#username.autofocus{
     left: 10px;
 }
 

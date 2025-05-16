@@ -18,7 +18,6 @@ diesel::table! {
     users (user_id) {
         user_id -> Integer,
         email -> Text,
-        username -> Text,
         password -> Text,
     }
 }

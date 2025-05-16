@@ -10,7 +10,7 @@ use tower_sessions::Session;
 use thiserror::Error;
 
 use crate::{
-    schema::users::dsl::{users, username},
+    schema::users::dsl::{users, email},
     model::{User, NewUser},
     DbPool,
 };
@@ -57,7 +57,7 @@ impl From<serde_json::Error> for LoginError {
 
 #[derive(serde::Deserialize)]
 pub struct LoginForm {
-    pub username: String,
+    pub email: String,
     pub password: String,
 }
 
@@ -69,7 +69,7 @@ pub async fn login(
 ) -> Result<Redirect, LoginError> {
     let mut conn = pool.get().unwrap();
     let user = users
-        .filter(username.eq(&form.username))
+        .filter(email.eq(&form.email))
         .first::<User>(&mut conn)
         .optional()?;
 
@@ -102,7 +102,7 @@ pub async fn register(
 
     diesel::insert_into(users)
         .values(&NewUser {
-            username: &form.username,
+            email: &form.email,
             password: &hashed_password,
         })
         .execute(&mut conn)?;
