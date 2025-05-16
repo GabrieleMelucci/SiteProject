@@ -1,4 +1,4 @@
-// @generated automatically by Diesel CLI.
+﻿// @generated automatically by Diesel CLI.
 
 diesel::table! {
     deck_words (deck_id, word_id) {
@@ -17,6 +17,7 @@ diesel::table! {
 diesel::table! {
     users (user_id) {
         user_id -> Integer,
+        email -> Text,
         username -> Text,
         password -> Text,
     }

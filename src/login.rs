@@ -75,7 +75,7 @@ pub async fn login(
 
     if let Some(user) = user {
         if verify(&form.password, &user.password)? {
-            session.insert("user_id", user.id).await?;
+            session.insert("user_id", user.user_id).await?;
             return Ok(Redirect::to("/"));
         }
     }

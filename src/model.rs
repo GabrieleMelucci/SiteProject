@@ -7,7 +7,8 @@ use crate::schema::users;
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
-    pub id: i32,
+    pub user_id: i32,
+    pub email: String,
     pub username: String,
     pub password: String,
 }
