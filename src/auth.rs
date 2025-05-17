@@ -8,7 +8,7 @@ use thiserror::Error;
 use tower_sessions::session::Error as SessionError;
 use validator::{Validate, ValidationErrors};
 
-// Errori specifici per il login
+// Login specific errors
 #[derive(Error, Debug)]
 pub enum LoginError {
     #[error("Invalid credentials")]
@@ -21,7 +21,7 @@ pub enum LoginError {
     SessionError(String),
 }
 
-// Errori specifici per la registrazione
+// Registration specific errors
 #[derive(Error, Debug)]
 pub enum RegisterError {
     #[error("Email already registered")]
@@ -36,7 +36,6 @@ pub enum RegisterError {
     SessionError(String),
 }
 
-// Enum principale che unisce tutti gli errori
 #[derive(Error, Debug)]
 pub enum AuthError {
     #[error(transparent)]
@@ -45,7 +44,6 @@ pub enum AuthError {
     Register(#[from] RegisterError),
 }
 
-// Implementazione di IntoResponse per LoginError
 impl IntoResponse for LoginError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
@@ -73,7 +71,6 @@ impl IntoResponse for LoginError {
     }
 }
 
-// Implementazione di IntoResponse per RegisterError
 impl IntoResponse for RegisterError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
@@ -102,7 +99,6 @@ impl IntoResponse for RegisterError {
     }
 }
 
-// Implementazione di IntoResponse per AuthError
 impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
         match self {

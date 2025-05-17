@@ -41,7 +41,6 @@ pub async fn search(
                 &entry.simplified,
                 &entry.traditional,
                 &PUNCTUATION_RE.replace_all(&entry.pinyin, "").to_lowercase(),
-                // Add pinyin without tones for better matching
                 &remove_tones(&entry.pinyin),
             ]),
             _ => entry.definitions.iter()
@@ -52,7 +51,7 @@ pub async fn search(
                 .fold(0.0, f32::max)
         };
 
-        if score > 0.8 {  // Increased threshold to 0.8 for stricter matching
+        if score > 0.8 {  
             results.push((entry.clone(), score));
         }
     }
@@ -96,13 +95,13 @@ fn similarity(a: &str, b: &str) -> f32 {
     // Check for partial matches with higher weight
     if b.contains(a) {
         let ratio = a.len() as f32 / b.len() as f32;
-        return 0.6 + (ratio * 0.4); // Scales between 0.6-1.0 based on match completeness
+        return 0.6 + (ratio * 0.4);
     }
 
     // Check for reverse partial match
     if a.contains(b) {
         let ratio = b.len() as f32 / a.len() as f32;
-        return 0.5 + (ratio * 0.3); // Scales between 0.5-0.8
+        return 0.5 + (ratio * 0.3); 
     }
 
     // Calculate Jaro-Winkler similarity for better partial matching

@@ -32,7 +32,7 @@ pub async fn handle_register(
     session: tower_sessions::Session,
     Form(form): Form<RegisterForm>,
 ) -> Result<Redirect, RegisterError> {
-    // Validazione automatica grazie a Validate
+    // Validation with validator
     form.validate().map_err(RegisterError::from)?;
 
     let mut conn = pool.get().map_err(|e| {
@@ -40,7 +40,7 @@ pub async fn handle_register(
         RegisterError::SessionError("Failed to get DB connection".into())
     })?;
 
-    // Verifica se l'email esiste già
+    // Checks if email is already taken
     let existing_user = users
         .filter(email.eq(&form.email))
         .first::<User>(&mut conn)
@@ -55,13 +55,13 @@ pub async fn handle_register(
         return Err(RegisterError::EmailTaken);
     }
 
-    // Hash della password
+    // Password hashing
     let hashed_password = hash(&form.password, DEFAULT_COST).map_err(|e| {
         log::error!("Password hashing failed: {}", e);
         RegisterError::HashingError(e)
     })?;
 
-    // Creazione del nuovo utente
+    // Create the new user
     diesel::insert_into(users)
         .values(&NewUser {
             email: &form.email,
@@ -73,7 +73,7 @@ pub async fn handle_register(
             RegisterError::DatabaseError(e)
         })?;
 
-    // Recupera l'utente appena creato
+    // Fetch the new user
     let user = users
         .filter(email.eq(&form.email))
         .first::<User>(&mut conn)
@@ -82,7 +82,7 @@ pub async fn handle_register(
             RegisterError::DatabaseError(e)
         })?;
 
-    // Imposta la sessione
+    // Set session
     set_user_session(&session, user.user_id, &user.email)
         .await
         .map_err(|e| {
