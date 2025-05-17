@@ -130,7 +130,12 @@ async fn terms_of_use(Extension(templates): Extension<Arc<Tera>>) -> impl IntoRe
 }
 
 // Auth handlers
-async fn handle_logout(session: tower_sessions::Session) -> Result<Redirect, auth::AuthError> {
-    session.delete().await?;
+async fn handle_logout(
+    session: tower_sessions::Session
+) -> Result<Redirect, auth::LoginError> {
+    session.delete().await.map_err(|e| {
+        log::error!("Failed to delete session: {}", e);
+        auth::LoginError::SessionError("Failed to logout".into())
+    })?;
     Ok(Redirect::to("/"))
 }
