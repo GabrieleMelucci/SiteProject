@@ -58,8 +58,8 @@ async fn main() {
 
     // API router
     let api_router = Router::new()
-        .route("/search", get(search::search))
-        .with_state((pool.clone(), dict_data));
+        .route("/search", get(search::search_api))
+        .with_state((pool.clone(), dict_data.clone()));
 
     // Auth router
     let auth_router = Router::new()
@@ -75,6 +75,8 @@ async fn main() {
         .route("/changelog", get(changelog))
         .route("/privacy-policy", get(privacy_policy))
         .route("/terms-of-use", get(terms_of_use))
+        // Search page
+        .route("/search", get(search::search_page))
         // Dashboard
         .route("/dashboard", get(dashboard))
         // Auth routes

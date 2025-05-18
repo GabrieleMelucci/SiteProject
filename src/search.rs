@@ -1,5 +1,7 @@
 use axum::{
     extract::{Query, State},
+    response::{IntoResponse},
+    Extension,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -7,8 +9,9 @@ use std::sync::Arc;
 use regex::Regex;
 use lazy_static::lazy_static;
 use unidecode::unidecode;
+use tera::Context;
 
-use crate::parser::DictEntry;
+use crate::{parser::DictEntry, utils::render_template};
 
 lazy_static! {
     static ref NORMALIZE_RE: Regex = Regex::new(r"[^a-zA-Z\u4e00-\u9fff]").unwrap();
@@ -27,7 +30,17 @@ pub struct SearchResult {
     pub results: Vec<DictEntry>,
 }
 
-pub async fn search(
+// Handler for HTML page
+pub async fn search_page(
+    Extension(templates): Extension<Arc<tera::Tera>>,
+) -> impl IntoResponse {
+    let mut context = Context::new();
+    context.insert("query", "");
+    render_template(&templates, "search.html", context)
+}
+
+// Handler for API endpoint
+pub async fn search_api(
     Query(params): Query<SearchParams>,
     State((_pool, dict)): State<(crate::DbPool, Arc<Vec<DictEntry>>)>,
 ) -> Json<SearchResult> {
@@ -51,7 +64,7 @@ pub async fn search(
                 .fold(0.0, f32::max)
         };
 
-        if score > 0.8 {  
+        if score > 0.8 {
             results.push((entry.clone(), score));
         }
     }
