@@ -12,7 +12,8 @@ CREATE TABLE users (
 CREATE TABLE decks (
     deck_id INTEGER PRIMARY KEY NOT NULL,  
     user_id INTEGER NOT NULL,
-
+    deck_name TEXT NOT NULL,
+    
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 

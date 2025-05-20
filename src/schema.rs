@@ -11,6 +11,7 @@ diesel::table! {
     decks (deck_id) {
         deck_id -> Integer,
         user_id -> Integer,
+        deck_name -> Text,
     }
 }
 

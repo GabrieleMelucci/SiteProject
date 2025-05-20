@@ -51,7 +51,30 @@
         </div>
     </div>
 
+    <!-- Deck selection modal -->
+    <div id="deckModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Add to Deck</h3>
+            <div id="deckSelection">
+                <select id="deckSelect" class="form-input">
+                    <option value="">Select a deck</option>
+                </select>
+                <button id="addToDeckBtn" class="form-button">Add to Deck</button>
+                <div class="new-deck-section">
+                    <h4>Or create new deck</h4>
+                    <input type="text" id="newDeckName" class="form-input" placeholder="New deck name">
+                    <button id="createDeckBtn" class="form-button">Create and Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Global variables to track current word being added
+        let currentWordId = null;
+        let currentWordData = null;
+
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Restore language preference
@@ -84,6 +107,24 @@
                     // Update URL without reloading
                     window.history.pushState({}, '', `/search?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(lang)}`);
                     performSearch(query, lang);
+                }
+            });
+
+            // Modal close button
+            document.querySelector('.close').addEventListener('click', function() {
+                document.getElementById('deckModal').style.display = 'none';
+            });
+
+            // Add to deck button
+            document.getElementById('addToDeckBtn').addEventListener('click', addToDeck);
+
+            // Create deck button
+            document.getElementById('createDeckBtn').addEventListener('click', createDeckAndAdd);
+
+            // Close modal when clicking outside
+            window.addEventListener('click', function(event) {
+                if (event.target === document.getElementById('deckModal')) {
+                    document.getElementById('deckModal').style.display = 'none';
                 }
             });
         });
@@ -127,9 +168,111 @@
                     <ul class="definitions">
                         ${result.definitions.map(def => `<li>${def || ''}</li>`).join('')}
                     </ul>
+                    <button class="add-to-deck-btn" data-word-id="${result.id}" data-word-data="${encodeURIComponent(JSON.stringify(result))}">Add to Deck</button>
                     <hr>
                 `;
                 container.appendChild(resultDiv);
+            });
+
+            // Add event listeners to all add-to-deck buttons
+            document.querySelectorAll('.add-to-deck-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    currentWordId = this.getAttribute('data-word-id');
+                    currentWordData = JSON.parse(decodeURIComponent(this.getAttribute('data-word-data')));
+                    showDeckSelection();
+                });
+            });
+        }
+
+        // Show deck selection modal
+        function showDeckSelection() {
+            fetch('/api/decks')
+                .then(response => response.json())
+                .then(decks => {
+                    const select = document.getElementById('deckSelect');
+                    select.innerHTML = '<option value="">Select a deck</option>';
+                    
+                    decks.forEach(deck => {
+                        const option = document.createElement('option');
+                        option.value = deck.id;
+                        option.textContent = deck.name;
+                        select.appendChild(option);
+                    });
+                    
+                    document.getElementById('deckModal').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching decks:', error);
+                    alert('Error loading decks. Please try again.');
+                });
+        }
+
+        // Add word to selected deck
+        function addToDeck() {
+            const deckId = document.getElementById('deckSelect').value;
+            if (!deckId) {
+                alert('Please select a deck');
+                return;
+            }
+
+            fetch('/api/decks/add-word', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    deckId: deckId,
+                    wordId: currentWordId,
+                    wordData: currentWordData
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Word added to deck successfully!');
+                    document.getElementById('deckModal').style.display = 'none';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding word to deck');
+            });
+        }
+
+        // Create new deck and add word
+        function createDeckAndAdd() {
+            const deckName = document.getElementById('newDeckName').value.trim();
+            if (!deckName) {
+                alert('Please enter a deck name');
+                return;
+            }
+
+            fetch('/api/decks/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: deckName,
+                    wordId: currentWordId,
+                    wordData: currentWordData
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Deck created and word added successfully!');
+                    document.getElementById('deckModal').style.display = 'none';
+                    document.getElementById('newDeckName').value = '';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating deck');
             });
         }
     </script>

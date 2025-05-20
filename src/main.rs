@@ -1,7 +1,7 @@
 use axum::{
     extract::Extension,
     response::{IntoResponse, Redirect},
-    routing::{get, get_service},
+    routing::{get, get_service, post},
     Router,
 };
 use diesel::{
@@ -23,6 +23,7 @@ mod register;
 mod schema;
 mod search;
 mod utils;
+mod deck;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -56,10 +57,22 @@ async fn main() {
         .with_expiry(Expiry::OnInactivity(Duration::days(1)))
         .with_secure(false);
 
-    // API router
-    let api_router = Router::new()
-        .route("/search", get(search::search_api))
+    // Deck API router (only needs pool)
+    let deck_api_router = Router::new()
+        .route("/", get(deck::list_decks))
+        .route("/create", post(deck::create_deck))
+        .route("/add-word", post(deck::add_word_to_deck))
+        .with_state(pool.clone());
+
+    // Search API router (needs both pool and dict_data)
+    let search_api_router = Router::new()
+        .route("/", get(search::search_api))
         .with_state((pool.clone(), dict_data.clone()));
+
+    // Combined API router
+    let api_router = Router::new()
+        .nest("/decks", deck_api_router)
+        .nest("/search", search_api_router);
 
     // Auth router
     let auth_router = Router::new()

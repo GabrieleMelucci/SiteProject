@@ -330,14 +330,14 @@ footer a:hover::after {
 .form-button {
     background-color: #3498db;
     border: none;
-    padding: 8px 24px; /* più piccolo */
+    padding: 8px 24px;
     color: white;
     border-radius: 5px;
-    font-size: 14px; /* più piccolo */
+    font-size: 14px; 
     cursor: pointer;
     transition: background 0.3s ease;
     margin: 20px auto 0;
-    display: block; /* permette il centramento */
+    display: block; 
 }
 
 
@@ -349,4 +349,60 @@ footer a:hover::after {
     margin-top: 20px;
     color: #aaaaaa;
     font-size: 14px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+}
+
+.modal-content {
+    background-color: #1e1e1e;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #C1423F;
+    width: 50%;
+    max-width: 500px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #ffffff;
+}
+
+.new-deck-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #3e3e3e;
+}
+
+/* Add to deck button */
+.add-to-deck-btn {
+    background-color: #C1423F;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+}
+
+.add-to-deck-btn:hover {
+    background-color: #ff3333;
 }
