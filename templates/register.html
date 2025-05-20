@@ -10,14 +10,15 @@
   <body>
     <div class="nav">
       <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
+      <a class="nav-item" href="/auth/login">Login or Sign up</a>
     </div>
 
     <div class="register-box">
       <h2 class="form-title">Sign up to ZWCD</h2>
       <form action="/auth/register" method="POST" id="registrationForm">
         <input type="email" placeholder="Email" name="email" id="email" required class="form-input" />
-        <input type="password" placeholder="Password" name="password" id="password" required class="form-input" />
-        <input type="password" placeholder="Repeat password" name="repeatPassword" id="repeatPassword" required class="form-input" />
+        <input type="password" placeholder="Password" name="password" minlength="8" id="password" required class="form-input" />
+        <input type="password" placeholder="Repeat password" minlength="8" name="repeatPassword" id="repeatPassword" required class="form-input" />
         <span id="passwordMatchError" style="color: red; display: none;">Passwords do not match!</span>
         <button type="submit" class="form-button">Sign Up</button>
       </form>
