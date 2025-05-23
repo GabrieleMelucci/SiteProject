@@ -1,9 +1,19 @@
-use axum::response::Html;
-use tera::{Tera, Context};
+use axum::{
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
+};
+use tera::{Context, Tera};
 
-pub fn render_template(tera: &Tera, template_name: &str, context: Context) -> Html<String> {
-    Html(
-        tera.render(template_name, &context)
-            .unwrap_or_else(|_| format!("Error rendering template: {}", template_name))
-    )
+pub fn render_template(
+    tera: &Tera,
+    template_name: &str,
+    context: Context,
+) -> Result<Html<String>, String> {
+    tera.render(template_name, &context)
+        .map(Html)
+        .map_err(|e| format!("Template rendering error: {}", e))
+}
+
+pub async fn is_authenticated(session: &tower_sessions::Session) -> bool {
+    session.get::<String>("user_email").await.map_or(false, |email| email.is_some())
 }

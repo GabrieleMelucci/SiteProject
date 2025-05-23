@@ -23,7 +23,11 @@ pub async fn show_login_form(
 ) -> Result<Html<String>, LoginError> {
     let mut context = Context::new();
     context.insert("title", "Login");
-    Ok(render_template(&tera, "login.html", context))
+    render_template(&tera, "login.html", context)
+        .map_err(|e| {
+            log::error!("{}", e);
+            LoginError::SessionError(e)
+        })
 }
 
 #[axum::debug_handler]
