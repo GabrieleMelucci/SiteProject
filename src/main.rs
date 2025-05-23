@@ -1,22 +1,21 @@
 use axum::{
-    Router,
     extract::Extension,
     response::{IntoResponse, Redirect},
     routing::{get, get_service, post},
+    Router,
 };
 use diesel::{
-    SqliteConnection,
     r2d2::{ConnectionManager, Pool},
+    SqliteConnection,
 };
 use std::sync::Arc;
-use tera::{Context, Tera};
+use tera::{Tera, Context};
 use time::Duration;
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 
 mod auth;
-mod deck;
 mod login;
 mod model;
 mod parser;
@@ -24,6 +23,7 @@ mod register;
 mod schema;
 mod search;
 mod utils;
+mod deck;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -120,72 +120,34 @@ async fn main() {
 }
 
 // Handlers for static pages
-async fn home(
-    Extension(templates): Extension<Arc<Tera>>,
-    session: tower_sessions::Session,
-) -> impl IntoResponse {
-    let mut context = Context::new();
-    add_session_to_context(&session, &mut context).await;
-    utils::render_template(&templates, "home.html", context)
+async fn home(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    utils::render_template(&templates, "ZWCD.html", Context::new())
 }
 
-async fn dashboard(
-    Extension(templates): Extension<Arc<Tera>>,
-    session: tower_sessions::Session,
-) -> impl IntoResponse {
-    let mut context = Context::new();
-    add_session_to_context(&session, &mut context).await;
-    utils::render_template(&templates, "dashboard.html", context)
+async fn dashboard(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    utils::render_template(&templates, "dashboard.html", Context::new())
 }
 
-async fn about(
-    Extension(templates): Extension<Arc<Tera>>,
-    session: tower_sessions::Session,
-) -> impl IntoResponse {
-    let mut context = Context::new();
-    add_session_to_context(&session, &mut context).await;
-    utils::render_template(&templates, "about.html", context)
+async fn about(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    utils::render_template(&templates, "about.html", Context::new())
 }
 
-async fn changelog(
-    Extension(templates): Extension<Arc<Tera>>,
-    session: tower_sessions::Session,
-) -> impl IntoResponse {
-    let mut context = Context::new();
-    add_session_to_context(&session, &mut context).await;
-    utils::render_template(&templates, "changelog.html", context)
+async fn changelog(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    utils::render_template(&templates, "changelog.html", Context::new())
 }
 
-async fn privacy_policy(
-    Extension(templates): Extension<Arc<Tera>>,
-    session: tower_sessions::Session,
-) -> impl IntoResponse {
-    let mut context = Context::new();
-    add_session_to_context(&session, &mut context).await;
-    utils::render_template(&templates, "privacy-policy.html", context)
+async fn privacy_policy(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    utils::render_template(&templates, "privacy-policy.html", Context::new())
 }
 
-async fn terms_of_use(
-    Extension(templates): Extension<Arc<Tera>>,
-    session: tower_sessions::Session,
-) -> impl IntoResponse {
-    let mut context = Context::new();
-    add_session_to_context(&session, &mut context).await;
-    utils::render_template(&templates, "terms-of-use.html", context)
-}
-
-// Helper function to add session info to context
-async fn add_session_to_context(session: &tower_sessions::Session, context: &mut Context) {
-    if let Ok(Some(user_email)) = session.get::<String>("user_email").await {
-        context.insert("user_logged_in", &true);
-        context.insert("user_email", &user_email);
-    } else {
-        context.insert("user_logged_in", &false);
-    }
+async fn terms_of_use(Extension(templates): Extension<Arc<Tera>>) -> impl IntoResponse {
+    utils::render_template(&templates, "terms-of-use.html", Context::new())
 }
 
 // Auth handlers
-async fn handle_logout(session: tower_sessions::Session) -> Result<Redirect, auth::LoginError> {
+async fn handle_logout(
+    session: tower_sessions::Session
+) -> Result<Redirect, auth::LoginError> {
     session.delete().await.map_err(|e| {
         log::error!("Failed to delete session: {}", e);
         auth::LoginError::SessionError("Failed to logout".into())
