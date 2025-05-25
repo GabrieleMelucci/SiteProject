@@ -10,7 +10,11 @@
 <body>
     <div class="nav">
         <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
+        {% if logged_in %}
+        <a class="nav-item" href="/auth/logout">Logout</a>
+        {% else %}
         <a class="nav-item" href="/auth/login">Login or Sign up</a>
+        {% endif %}
     </div>
     
     <div class="container bugfix">
