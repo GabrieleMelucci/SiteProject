@@ -6,17 +6,18 @@ use serde::{Deserialize, Serialize};
 use diesel::prelude::*;
 use diesel::sql_types::Integer;
 
-use crate::{DbPool, schema::{decks, words, deck_words}};
+use crate::{schema::{deck_words, decks, words}, utils, DbPool};
 
 #[derive(Serialize)]
 pub struct Deck {
     pub id: i32,
-    pub deck_name: String,
+    pub name: String,
 }
 
 #[derive(Deserialize)]
 pub struct CreateDeckRequest {
-    pub deck_name: String,
+    pub name: String,
+    pub user_id: i32,  // Added user_id to match schema
     pub word_id: Option<i32>,
     pub word_data: Option<serde_json::Value>,
 }
@@ -36,19 +37,26 @@ pub struct ApiResponse {
 
 pub async fn list_decks(
     State(pool): State<DbPool>,
+    session: tower_sessions::Session,
 ) -> Result<Json<Vec<Deck>>, (StatusCode, String)> {
+    let user_id = match utils::get_current_user_id(&session).await {
+        Some(id) => id,
+        None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
+    };
+
     let mut conn = pool.get().map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
     let decks = decks::table
+        .filter(decks::user_id.eq(user_id))
         .select((decks::deck_id, decks::deck_name))
         .load::<(i32, String)>(&mut conn)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
         })?
         .into_iter()
-        .map(|(id, deck_name)| Deck { id, deck_name })
+        .map(|(id, name)| Deck { id, name })
         .collect();
 
     Ok(Json(decks))
@@ -62,9 +70,12 @@ pub async fn create_deck(
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    // Create the deck
+    // Create the deck with user_id
     diesel::insert_into(decks::table)
-        .values(&decks::deck_name.eq(payload.deck_name))
+        .values((
+            decks::deck_name.eq(payload.name),
+            decks::user_id.eq(payload.user_id),
+        ))
         .execute(&mut conn)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
@@ -115,7 +126,7 @@ fn add_word_to_deck_internal(
     word_id: i32,
     word_data: serde_json::Value,
 ) -> Result<(), diesel::result::Error> {
-    // Ensure word exists
+    // Insert or update word in words table
     diesel::insert_into(words::table)
         .values((
             words::word_id.eq(word_id),
@@ -126,7 +137,7 @@ fn add_word_to_deck_internal(
         .set(words::word.eq(word_data.to_string()))
         .execute(conn)?;
 
-    // Add to deck
+    // Add relationship in deck_words table
     diesel::insert_into(deck_words::table)
         .values((
             deck_words::deck_id.eq(deck_id),

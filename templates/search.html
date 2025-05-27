@@ -78,6 +78,7 @@
         // Global variables to track current word being added
         let currentWordId = null;
         let currentWordData = null;
+        let currentUserId = {{ user_id | default(value="null") }};
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -172,7 +173,9 @@
                     <ul class="definitions">
                         ${result.definitions.map(def => `<li>${def || ''}</li>`).join('')}
                     </ul>
-                    <button class="add-to-deck-btn" data-word-id="${result.id}" data-word-data="${encodeURIComponent(JSON.stringify(result))}">Add to Deck</button>
+                    <button class="add-to-deck-btn" data-word-id="${result.id}" data-word-data="${encodeURIComponent(JSON.stringify(result))}">
+                        Add to Deck
+                    </button>
                     <hr>
                 `;
                 container.appendChild(resultDiv);
@@ -181,6 +184,11 @@
             // Add event listeners to all add-to-deck buttons
             document.querySelectorAll('.add-to-deck-btn').forEach(button => {
                 button.addEventListener('click', function() {
+                    if (!currentUserId) {
+                        alert('Please log in to add words to decks');
+                        window.location.href = '/auth/login';
+                        return;
+                    }
                     currentWordId = this.getAttribute('data-word-id');
                     currentWordData = JSON.parse(decodeURIComponent(this.getAttribute('data-word-data')));
                     showDeckSelection();
@@ -190,8 +198,11 @@
 
         // Show deck selection modal
         function showDeckSelection() {
-            fetch('/api/decks')
-                .then(response => response.json())
+            fetch(`/api/decks?user_id=${currentUserId}`)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to fetch decks');
+                    return response.json();
+                })
                 .then(decks => {
                     const select = document.getElementById('deckSelect');
                     select.innerHTML = '<option value="">Select a deck</option>';
@@ -225,12 +236,15 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    deckId: deckId,
-                    wordId: currentWordId,
-                    wordData: currentWordData
+                    deck_id: parseInt(deckId),
+                    word_id: parseInt(currentWordId),
+                    word_data: currentWordData
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     alert('Word added to deck successfully!');
@@ -246,38 +260,47 @@
         }
 
         // Create new deck and add word
-        function createDeckAndAdd() {
+        async function createDeckAndAdd() {
             const deckName = document.getElementById('newDeckName').value.trim();
             if (!deckName) {
                 alert('Please enter a deck name');
                 return;
             }
 
-            fetch('/api/decks/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: deckName,
-                    wordId: currentWordId,
-                    wordData: currentWordData
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
+            if (!currentUserId) {
+                alert('Please log in to create decks');
+                window.location.href = '/auth/login';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/decks/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: deckName,
+                        user_id: currentUserId,
+                        word_id: parseInt(currentWordId),
+                        word_data: currentWordData
+                    })
+                });
+
+                const data = await response.json();
                 if (data.success) {
                     alert('Deck created and word added successfully!');
                     document.getElementById('deckModal').style.display = 'none';
                     document.getElementById('newDeckName').value = '';
+                    // Refresh deck list
+                    showDeckSelection();
                 } else {
                     alert('Error: ' + data.message);
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error:', error);
                 alert('Error creating deck');
-            });
+            }
         }
     </script>
 

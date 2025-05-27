@@ -172,6 +172,7 @@ pub async fn set_user_session(
     user_id: i32,
     email: &str,
 ) -> Result<(), LoginError> {
+    session.insert("logged_in", true).await?;
     session.insert("user_id", user_id).await?;
     session.insert("user_email", email).await?;
     Ok(())
