@@ -91,6 +91,8 @@ async fn main() {
         .route("/search", get(search::search_page))
         // Dashboard
         .route("/dashboard", get(dashboard))
+        // Decks management
+        .route("/decks", get(decks_management))
         // Auth routes
         .nest("/auth", auth_router)
         // API routes
@@ -135,6 +137,12 @@ async fn dashboard(Extension(templates): Extension<Arc<Tera>>, session: tower_se
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "dashboard.html", context).into_response()
+}
+
+async fn decks_management(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+    let mut context = tera::Context::new();
+    context.insert("logged_in", &utils::is_logged_in(&session).await);
+    utils::render_template(&templates, "decks_management.html", context).into_response()
 }
 
 async fn about(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {

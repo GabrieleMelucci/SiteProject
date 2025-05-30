@@ -84,6 +84,42 @@ footer a:hover::after {
     width: 90%;
 }
 
+/* Dashboard elements*/
+
+.dashboard-section a {
+    font-family: "Times New Roman", Times, serif;
+    text-align: center;
+    font-size: 18px;
+    padding: 5px;
+    position: relative;
+    text-decoration: none;
+    color: #C1423F;
+}
+
+.dashboard-section a::after{
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0px;
+    left: 5%;
+    background-color: #ffffff;
+    transition: width 0.3s ease, left 0.3s ease; /* Animazione fluida */
+}
+
+.dashboard-section a:hover {
+    color: #ffffff;
+}
+
+.dashboard-section a:hover::after {
+    width: 90%; 
+}
+
+.dashboard-section {
+    margin: 40px 0;
+    text-align: center;
+}
+
 /* ===== FORM ELEMENTS ===== */
 .autofocus, .lang-select {
     background-color: #1a1a1a;
