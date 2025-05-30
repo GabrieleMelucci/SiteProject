@@ -59,20 +59,24 @@ async fn main() {
         .route("/", get(deck::list_decks))
         .route("/create", post(deck::create_deck))
         .route("/add-word", post(deck::add_word_to_deck))
-        .with_state(pool.clone());
+        .with_state(pool.clone())
+        .layer(session_layer.clone());
 
     let search_api_router = Router::new()
         .route("/", get(search::search_api))
-        .with_state((pool.clone(), dict_data.clone()));
+        .with_state((pool.clone(), dict_data.clone()))
+        .layer(session_layer.clone());
 
     let api_router = Router::new()
         .nest("/decks", deck_api_router)
-        .nest("/search", search_api_router);
+        .nest("/search", search_api_router)
+        .layer(session_layer.clone());
 
     let auth_router = Router::new()
         .merge(login::auth_router(pool.clone(), templates.clone()))
         .merge(register::auth_router(pool.clone(), templates.clone()))
-        .route("/logout", get(handle_logout));
+        .route("/logout", get(handle_logout))
+        .layer(session_layer.clone());
 
     // Main application router
     let app = Router::new()

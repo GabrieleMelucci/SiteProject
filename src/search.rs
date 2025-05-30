@@ -11,7 +11,7 @@ use lazy_static::lazy_static;
 use unidecode::unidecode;
 use tera::Context;
 
-use crate::{parser::DictEntry, utils::render_template};
+use crate::{parser::DictEntry, utils::{self, render_template}};
 
 lazy_static! {
     static ref NORMALIZE_RE: Regex = Regex::new(r"[^a-zA-Z\u4e00-\u9fff]").unwrap();
@@ -33,16 +33,19 @@ pub struct SearchResult {
 // Handler for HTML page
 pub async fn search_page(
     Extension(templates): Extension<Arc<tera::Tera>>,
+    session: tower_sessions::Session
 ) -> impl IntoResponse {
     let mut context = Context::new();
     context.insert("query", "");
+    context.insert("logged_in", &utils::is_logged_in(&session).await);
+    context.insert("user_id", &utils::get_current_user_id(&session).await);
     render_template(&templates, "search.html", context)
 }
 
 // Handler for API endpoint
 pub async fn search_api(
     Query(params): Query<SearchParams>,
-    State((_pool, dict)): State<(crate::DbPool, Arc<Vec<DictEntry>>)>,
+    State((_pool, dict)): State<(crate::DbPool, Arc<Vec<DictEntry>>)>
 ) -> Json<SearchResult> {
     let query_lower = params.q.to_lowercase();
     let normalized = NORMALIZE_RE.replace_all(&query_lower, "");
