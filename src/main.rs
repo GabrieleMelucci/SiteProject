@@ -2,7 +2,7 @@ use axum::{
     Router,
     extract::Extension,
     response::{IntoResponse, Redirect},
-    routing::{get, get_service, post},
+    routing::{get, get_service, post, delete},
 };
 use diesel::{
     SqliteConnection,
@@ -57,6 +57,8 @@ async fn main() {
     // Build routers
     let deck_api_router = Router::new()
         .route("/", get(deck::list_decks))
+        .route("/", delete(deck::delete_deck)) 
+        .route("/words", get(deck::get_deck_words))
         .route("/create", post(deck::create_deck))
         .route("/add-word", post(deck::add_word_to_deck))
         .with_state(pool.clone())
@@ -121,7 +123,9 @@ async fn main() {
 
 // Handlers
 async fn root_handler(
-    Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     if utils::is_logged_in(&session).await {
         let mut context = tera::Context::new();
         context.insert("logged_in", &utils::is_logged_in(&session).await);
@@ -133,37 +137,63 @@ async fn root_handler(
     }
 }
 
-async fn dashboard(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn dashboard(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "dashboard.html", context).into_response()
 }
 
-async fn decks_management(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn decks_management(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
-    context.insert("logged_in", &utils::is_logged_in(&session).await);
+    let logged_in = utils::is_logged_in(&session).await;
+    context.insert("logged_in", &logged_in);
+
+    if logged_in {
+        if let Some(user_id) = utils::get_current_user_id(&session).await {
+            context.insert("user_id", &user_id);
+        }
+    }
+
     utils::render_template(&templates, "decks_management.html", context).into_response()
 }
 
-async fn about(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn about(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "about.html", context).into_response()
 }
 
-async fn changelog(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn changelog(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "changelog.html", context).into_response()
 }
 
-async fn privacy_policy(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn privacy_policy(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "privacy-policy.html", context).into_response()
 }
 
-async fn terms_of_use(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn terms_of_use(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "terms-of-use.html", context).into_response()

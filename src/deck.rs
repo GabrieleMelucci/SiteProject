@@ -8,6 +8,11 @@ use diesel::sql_types::Integer;
 
 use crate::{schema::{deck_words, decks, words}, utils, DbPool};
 
+#[derive(Deserialize)]
+pub struct DeckId {
+    pub deck_id: i32,
+}
+
 #[derive(Serialize)]
 pub struct Deck {
     pub id: i32,
@@ -17,7 +22,6 @@ pub struct Deck {
 #[derive(Deserialize)]
 pub struct CreateDeckRequest {
     pub name: String,
-    pub user_id: i32,  // Added user_id to match schema
     pub word_id: Option<i32>,
     pub word_data: Option<serde_json::Value>,
 }
@@ -33,6 +37,12 @@ pub struct AddWordRequest {
 pub struct ApiResponse {
     pub success: bool,
     pub message: String,
+}
+
+#[derive(Serialize, Queryable)]
+pub struct Word {
+    pub id: i32,
+    pub word: String,
 }
 
 pub async fn list_decks(
@@ -64,17 +74,23 @@ pub async fn list_decks(
 
 pub async fn create_deck(
     State(pool): State<DbPool>,
+    session: tower_sessions::Session,
     Json(payload): Json<CreateDeckRequest>,
 ) -> Result<Json<ApiResponse>, (StatusCode, String)> {
+    let user_id = match utils::get_current_user_id(&session).await {
+        Some(id) => id,
+        None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
+    };
+
     let mut conn = pool.get().map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    // Create the deck with user_id
+    // Create the deck using the session user_id
     diesel::insert_into(decks::table)
         .values((
             decks::deck_name.eq(payload.name),
-            decks::user_id.eq(payload.user_id),
+            decks::user_id.eq(user_id), // Use session user_id instead of payload.user_id
         ))
         .execute(&mut conn)
         .map_err(|e| {
@@ -148,4 +164,89 @@ fn add_word_to_deck_internal(
         .execute(conn)?;
 
     Ok(())
+}
+
+pub async fn delete_deck(
+    State(pool): State<DbPool>,
+    session: tower_sessions::Session,
+    Json(payload): Json<DeckId>,
+) -> Result<Json<ApiResponse>, (StatusCode, String)> {
+    let user_id = match utils::get_current_user_id(&session).await {
+        Some(id) => id,
+        None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
+    };
+
+    let mut conn = pool.get().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
+
+    // Check if the deck belongs to the user
+    let deck_exists = decks::table
+        .filter(decks::deck_id.eq(payload.deck_id))
+        .filter(decks::user_id.eq(user_id))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })? > 0;
+
+    if !deck_exists {
+        return Err((StatusCode::NOT_FOUND, "Deck not found".to_string()));
+    }
+
+    // Delete the deck and its associated words
+    diesel::delete(deck_words::table.filter(deck_words::deck_id.eq(payload.deck_id)))
+        .execute(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })?;
+
+    diesel::delete(decks::table.filter(decks::deck_id.eq(payload.deck_id)))
+        .execute(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })?;
+
+    Ok(Json(ApiResponse {
+        success: true,
+        message: "Deck deleted successfully".to_string(),
+    }))
+}
+
+pub async fn get_deck_words(
+    State(pool): State<DbPool>,
+    session: tower_sessions::Session,
+    Json(payload): Json<DeckId>,
+) -> Result<Json<Vec<Word>>, (StatusCode, String)> {
+    let user_id = utils::get_current_user_id(&session).await.ok_or_else(|| {
+        (StatusCode::UNAUTHORIZED, "Not logged in".to_string())
+    })?;
+
+    let mut conn = pool.get().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
+
+    // Verify ownership
+    let deck_owner: i32 = decks::table
+        .filter(decks::deck_id.eq(payload.deck_id))
+        .select(decks::user_id)
+        .first(&mut conn)
+        .map_err(|_| {
+            (StatusCode::FORBIDDEN, "Deck not found or access denied".to_string())
+        })?;
+
+    if deck_owner != user_id {
+        return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
+    }
+
+    let words = deck_words::table
+        .filter(deck_words::deck_id.eq(payload.deck_id))
+        .inner_join(words::table)
+        .select((words::word_id, words::word))
+        .load::<Word>(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })?;
+
+    Ok(Json(words))
 }

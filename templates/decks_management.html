@@ -1,28 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZWCD - Chinese Language Support</title>
-    <link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZWCD - Chinese Language Support</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 
 <body>
-    <div class="nav">
-        <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
-        {% if logged_in %}
-        <a class="nav-item" href="/auth/logout">Logout</a>
-        {% else %}
-        <a class="nav-item" href="/auth/login">Login or Sign up</a>
-        {% endif %}
-    </div>
-    
-<hr class="bottom">
-    <footer class="site-footer">
-        <a href="/about">About</a>
-        <a href="/changelog">Changelog</a>
-        <a href="/privacy-policy">Privacy-policy</a>
-        <a href="/terms-of-use">Terms-of-use</a>
-    </footer>
+  <div class="nav">
+    <h1 class="nav-logo">
+      <a href="/">ZWCD</a> 
+      <span style="font-size: 50%">Chinese Language Learning Support</span>
+    </h1>
+    {% if logged_in %}
+      <a class="nav-item" href="/auth/logout">Logout</a>
+    {% else %}
+      <a class="nav-item" href="/auth/login">Login or Sign up</a>
+    {% endif %}
+  </div>
+
+  <div class="deck-list" id="decksContainer">
+    <!-- Decks will be loaded here -->
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loggedIn = {{ logged_in | default(value=false) }};
+      const currentUserId = {{ user_id | default(value="null") }};
+      const decksContainer = document.getElementById('decksContainer');
+      
+      if (!loggedIn || !currentUserId) {
+        decksContainer.innerHTML = `
+          <div class="result-item">
+            <p>Please <a href="/auth/login">log in</a> to view your decks.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Fetch decks from API (no need for user_id in URL since backend handles it)
+      fetch('/api/decks')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(response.status === 401 
+              ? 'Session expired. Please log in again.' 
+              : 'Failed to fetch decks');
+          }
+          return response.json();
+        })
+        .then(decks => {
+          if (decks.length === 0) {
+            decksContainer.innerHTML = `
+              <div class="result-item">
+                <p>You have no decks yet.</p>
+                <button onclick="location.href='/deck/new'" class="view-deck-btn">
+                  Create Your First Deck
+                </button>
+              </div>
+            `;
+            return;
+          }
+
+          decksContainer.innerHTML = ''; // Clear any loading messages
+          
+          decks.forEach(deck => {
+            const deckElement = document.createElement('div');
+            deckElement.className = 'result-item';
+            deckElement.innerHTML = `
+              <h3>${deck.name}</h3>
+              <div class="deck-actions">
+                <button class="view-deck-btn" data-deck-id="${deck.id}">
+                  View Deck
+                </button>
+                <button class="study-deck-btn" data-deck-id="${deck.id}">
+                  Study Deck
+                </button>
+              </div>
+              <hr>
+            `;
+            decksContainer.appendChild(deckElement);
+          });
+
+          // Add event listeners to all deck buttons
+          document.querySelectorAll('.view-deck-btn').forEach(button => {
+            button.addEventListener('click', function() {
+              window.location.href = `/deck/${this.dataset.deckId}`;
+            });
+          });
+
+          document.querySelectorAll('.study-deck-btn').forEach(button => {
+            button.addEventListener('click', function() {
+              window.location.href = `/deck/${this.dataset.deckId}/study`;
+            });
+          });
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          decksContainer.innerHTML = `
+            <div class="result-item error">
+              <p>${error.message}</p>
+              ${error.message.includes('expired') 
+                ? '<a href="/auth/login" class="login-link">Login Page</a>' 
+                : '<button onclick="window.location.reload()">Retry</button>'}
+            </div>
+          `;
+        });
+    });
+  </script>
+
+  <hr class="bottom" />
+  <footer class="site-footer">
+    <a href="/about">About</a>
+    <a href="/changelog">Changelog</a>
+    <a href="/privacy-policy">Privacy-policy</a>
+    <a href="/terms-of-use">Terms-of-use</a>
+  </footer>
 </body>
 </html>
