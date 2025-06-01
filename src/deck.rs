@@ -9,6 +9,14 @@ use axum::extract::Path;
 
 use crate::{schema::{deck_words, decks, words}, utils, DbPool};
 
+#[derive(Serialize)]
+pub struct DeckWord {
+    pub id: i32,
+    pub hanzi: Option<String>,
+    pub pinyin: Option<String>,
+    pub definition: Option<String>,
+}
+
 #[derive(Deserialize)]
 pub struct DeckId {
     pub deck_id: i32,
@@ -243,21 +251,27 @@ pub async fn view_deck(
         .map_err(|_| {
             (StatusCode::NOT_FOUND, "Deck not found or access denied".to_string())
         })?;
-    let deck = Deck { id, name };
 
     // Get words for the deck
-    let words = deck_words::table
+    let words_data = deck_words::table
         .filter(deck_words::deck_id.eq(deck_id))
         .inner_join(words::table)
         .select((words::word_id, words::word))
-        .load::<Word>(&mut conn)
+        .load::<(i32, String)>(&mut conn)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
         })?;
 
+    let words = words_data.into_iter().map(|(id, word_json)| {
+        Word {
+            id,
+            word: word_json,
+        }
+    }).collect();
+
     Ok(Json(DeckWithWords {
-        id: deck.id,
-        name: deck.name,
+        id,
+        name,
         words,
     }))
 }

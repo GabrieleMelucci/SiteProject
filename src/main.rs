@@ -1,6 +1,6 @@
 use axum::{
     Router,
-    extract::Extension,
+    extract::{Extension, Path},
     response::{IntoResponse, Redirect},
     routing::{get, get_service, post, delete},
 };
@@ -96,6 +96,7 @@ async fn main() {
         .route("/dashboard", get(dashboard))
         // Decks management
         .route("/decks", get(decks_management))
+        .route("/deck/{deck_id}", get(deck_view_page))
         // Auth routes
         .nest("/auth", auth_router)
         // API routes
@@ -206,4 +207,15 @@ async fn handle_logout(session: tower_sessions::Session) -> Result<Redirect, aut
         auth::LoginError::SessionError("Failed to logout".into())
     })?;
     Ok(Redirect::to("/"))
+}
+
+async fn deck_view_page(
+    Path(deck_id): Path<i32>,
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
+    let mut context = tera::Context::new();
+    context.insert("logged_in", &utils::is_logged_in(&session).await);
+    context.insert("deck_id", &deck_id);
+    utils::render_template(&templates, "view-deck.html", context).into_response()
 }
