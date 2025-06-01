@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZWCD - Chinese Language Support</title>
   <link rel="stylesheet" href="/static/style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 
 <body>
@@ -21,8 +20,10 @@
     {% endif %}
   </div>
 
+  <h2>Your Decks</h2>
+
   <div class="deck-list" id="decksContainer">
-    <!-- Decks will be loaded here -->
+    
   </div>
 
   <script>
@@ -40,7 +41,7 @@
         return;
       }
 
-      // Fetch decks from API (no need for user_id in URL since backend handles it)
+      // Fetch decks from API
       fetch('/api/decks')
         .then(response => {
           if (!response.ok) {
@@ -63,7 +64,7 @@
             return;
           }
 
-          decksContainer.innerHTML = ''; // Clear any loading messages
+          decksContainer.innerHTML = ''; 
           
           decks.forEach(deck => {
             const deckElement = document.createElement('div');

@@ -427,8 +427,8 @@ footer a:hover::after {
     border-top: 1px solid #3e3e3e;
 }
 
-/* Add to deck button */
-.add-to-deck-btn {
+/* buttons */
+.add-to-deck-btn, .view-deck-btn, .study-deck-btn {
     background-color: #C1423F;
     color: white;
     border: none;
@@ -439,6 +439,6 @@ footer a:hover::after {
     transition: background-color 0.3s;
 }
 
-.add-to-deck-btn:hover {
+.function-btn:hover {
     background-color: #ff3333;
 }

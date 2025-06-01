@@ -1,0 +1,21 @@
+{% extends "ZWCD.html" %}
+
+{% block content %}
+<div class="deck-view">
+    <h1>{{ deck.name }}</h1>
+    <p>{{ deck.description }}</p>
+    
+    <h2>Words in this deck</h2>
+    <ul class="word-list">
+        {% for word in words %}
+        <li>
+            <span class="hanzi">{{ word.hanzi }}</span>
+            <span class="pinyin">{{ word.pinyin }}</span>
+            <span class="definition">{{ word.definition }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    
+    <a href="/decks" class="btn">Back to all decks</a>
+</div>
+{% endblock %}

@@ -61,6 +61,7 @@ async fn main() {
         .route("/words", get(deck::get_deck_words))
         .route("/create", post(deck::create_deck))
         .route("/add-word", post(deck::add_word_to_deck))
+        .route("/{deck_id}", get(deck::view_deck))
         .with_state(pool.clone())
         .layer(session_layer.clone());
 

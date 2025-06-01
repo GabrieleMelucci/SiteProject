@@ -5,6 +5,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use diesel::prelude::*;
 use diesel::sql_types::Integer;
+use axum::extract::Path;
 
 use crate::{schema::{deck_words, decks, words}, utils, DbPool};
 
@@ -43,6 +44,13 @@ pub struct ApiResponse {
 pub struct Word {
     pub id: i32,
     pub word: String,
+}
+
+#[derive(Serialize, Queryable)]
+pub struct DeckWithWords {
+    pub id: i32,
+    pub name: String,
+    pub words: Vec<Word>,
 }
 
 pub async fn list_decks(
@@ -90,7 +98,7 @@ pub async fn create_deck(
     diesel::insert_into(decks::table)
         .values((
             decks::deck_name.eq(payload.name),
-            decks::user_id.eq(user_id), // Use session user_id instead of payload.user_id
+            decks::user_id.eq(user_id), 
         ))
         .execute(&mut conn)
         .map_err(|e| {
@@ -210,6 +218,47 @@ pub async fn delete_deck(
     Ok(Json(ApiResponse {
         success: true,
         message: "Deck deleted successfully".to_string(),
+    }))
+}
+
+pub async fn view_deck(
+    Path(deck_id): Path<i32>,
+    State(pool): State<DbPool>,
+    session: tower_sessions::Session,
+) -> Result<Json<DeckWithWords>, (StatusCode, String)> {
+    let user_id = utils::get_current_user_id(&session).await.ok_or_else(|| {
+        (StatusCode::UNAUTHORIZED, "Not logged in".to_string())
+    })?;
+
+    let mut conn = pool.get().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
+
+    // Verify deck ownership
+    let (id, name): (i32, String) = decks::table
+        .filter(decks::deck_id.eq(deck_id))
+        .filter(decks::user_id.eq(user_id))
+        .select((decks::deck_id, decks::deck_name))
+        .first(&mut conn)
+        .map_err(|_| {
+            (StatusCode::NOT_FOUND, "Deck not found or access denied".to_string())
+        })?;
+    let deck = Deck { id, name };
+
+    // Get words for the deck
+    let words = deck_words::table
+        .filter(deck_words::deck_id.eq(deck_id))
+        .inner_join(words::table)
+        .select((words::word_id, words::word))
+        .load::<Word>(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })?;
+
+    Ok(Json(DeckWithWords {
+        id: deck.id,
+        name: deck.name,
+        words,
     }))
 }
 
