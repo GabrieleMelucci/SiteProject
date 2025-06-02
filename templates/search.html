@@ -198,7 +198,7 @@
 
         // Show deck selection modal
         function showDeckSelection() {
-            fetch(`/api/decks?user_id=${currentUserId}`)
+            fetch(`/api/decks`)
                 .then(response => {
                     if (!response.ok) throw new Error('Failed to fetch decks');
                     return response.json();

@@ -22,9 +22,7 @@
 
   <h2>Your Decks</h2>
 
-  <div class="deck-list" id="decksContainer">
-    
-  </div>
+  <div class="deck-list" id="decksContainer"></div>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -78,6 +76,9 @@
                 <button class="study-deck-btn" data-deck-id="${deck.id}">
                   Study Deck
                 </button>
+                <button class="delete-deck-btn" data-deck-id="${deck.id}">
+                  Delete Deck
+                </button>
               </div>
               <hr>
             `;
@@ -94,6 +95,30 @@
           document.querySelectorAll('.study-deck-btn').forEach(button => {
             button.addEventListener('click', function() {
               window.location.href = `/deck/${this.dataset.deckId}/study`;
+            });
+          });
+
+          document.querySelectorAll('.delete-deck-btn').forEach(button => {
+            button.addEventListener('click', async function() {
+              const deckId = this.dataset.deckId;
+              if (confirm('Are you sure you want to delete this deck?')) {
+                try {
+                  const response = await fetch(`/api/decks/${deckId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                  });
+
+                  const result = await response.json();
+                  if (!response.ok) {
+                    alert(result.message || 'Failed to delete deck');
+                    return;
+                  }
+                  window.location.reload();
+                } catch (error) {
+                  console.error('Error:', error);
+                  alert('Error deleting deck');
+                }
+              }
             });
           });
         })

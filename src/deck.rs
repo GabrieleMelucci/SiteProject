@@ -17,6 +17,13 @@ pub struct DeckWord {
     pub definition: Option<String>,
 }
 
+#[derive(Serialize)]
+pub struct DeckWithWords {
+    pub id: i32,
+    pub name: String,
+    pub words: Vec<DeckWord>,
+}
+
 #[derive(Deserialize)]
 pub struct DeckId {
     pub deck_id: i32,
@@ -52,13 +59,6 @@ pub struct ApiResponse {
 pub struct Word {
     pub id: i32,
     pub word: String,
-}
-
-#[derive(Serialize, Queryable)]
-pub struct DeckWithWords {
-    pub id: i32,
-    pub name: String,
-    pub words: Vec<Word>,
 }
 
 pub async fn list_decks(
@@ -185,7 +185,7 @@ fn add_word_to_deck_internal(
 pub async fn delete_deck(
     State(pool): State<DbPool>,
     session: tower_sessions::Session,
-    Json(payload): Json<DeckId>,
+    Path(deck_id): Path<i32>,  // Change from Json to Path
 ) -> Result<Json<ApiResponse>, (StatusCode, String)> {
     let user_id = match utils::get_current_user_id(&session).await {
         Some(id) => id,
@@ -196,9 +196,8 @@ pub async fn delete_deck(
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    // Check if the deck belongs to the user
     let deck_exists = decks::table
-        .filter(decks::deck_id.eq(payload.deck_id))
+        .filter(decks::deck_id.eq(deck_id))  // Use the path parameter
         .filter(decks::user_id.eq(user_id))
         .count()
         .get_result::<i64>(&mut conn)
@@ -210,18 +209,24 @@ pub async fn delete_deck(
         return Err((StatusCode::NOT_FOUND, "Deck not found".to_string()));
     }
 
-    // Delete the deck and its associated words
-    diesel::delete(deck_words::table.filter(deck_words::deck_id.eq(payload.deck_id)))
-        .execute(&mut conn)
-        .map_err(|e| {
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
-        })?;
-
-    diesel::delete(decks::table.filter(decks::deck_id.eq(payload.deck_id)))
-        .execute(&mut conn)
-        .map_err(|e| {
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
-        })?;
+    // Transaction for atomic deletion
+    conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        // First delete from deck_words
+        diesel::delete(
+            deck_words::table
+                .filter(deck_words::deck_id.eq(deck_id))
+        )
+        .execute(conn)?;
+        
+        // Then delete from decks
+        diesel::delete(
+            decks::table
+                .filter(decks::deck_id.eq(deck_id))
+        )
+        .execute(conn)
+    }).map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
 
     Ok(Json(ApiResponse {
         success: true,
@@ -242,7 +247,7 @@ pub async fn view_deck(
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    // Verify deck ownership
+    // Verify deck ownership and get deck name
     let (id, name): (i32, String) = decks::table
         .filter(decks::deck_id.eq(deck_id))
         .filter(decks::user_id.eq(user_id))
@@ -262,12 +267,23 @@ pub async fn view_deck(
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
         })?;
 
-    let words = words_data.into_iter().map(|(id, word_json)| {
-        Word {
-            id,
-            word: word_json,
+    // Parse each word's JSON data
+    let mut words = Vec::new();
+    for (id, word_json) in words_data {
+        if let Ok(word_data) = serde_json::from_str::<serde_json::Value>(&word_json) {
+            words.push(DeckWord {
+                id,
+                hanzi: word_data.get("simplified").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                pinyin: word_data.get("pinyin").and_then(|v| v.as_str()).map(|s| s.to_string()),
+                definition: word_data.get("definitions")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| arr.iter()
+                        .filter_map(|v| v.as_str())
+                        .collect::<Vec<&str>>()
+                        .join(", "))
+            });
         }
-    }).collect();
+    }
 
     Ok(Json(DeckWithWords {
         id,

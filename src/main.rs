@@ -57,7 +57,7 @@ async fn main() {
     // Build routers
     let deck_api_router = Router::new()
         .route("/", get(deck::list_decks))
-        .route("/", delete(deck::delete_deck)) 
+        .route("/{deck_id}", delete(deck::delete_deck))
         .route("/words", get(deck::get_deck_words))
         .route("/create", post(deck::create_deck))
         .route("/add-word", post(deck::add_word_to_deck))
@@ -97,6 +97,7 @@ async fn main() {
         // Decks management
         .route("/decks", get(decks_management))
         .route("/deck/{deck_id}", get(deck_view_page))
+        .route("/deck/{deck_id}/study", get(deck_view_page))
         // Auth routes
         .nest("/auth", auth_router)
         // API routes

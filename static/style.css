@@ -428,7 +428,7 @@ footer a:hover::after {
 }
 
 /* buttons */
-.add-to-deck-btn, .view-deck-btn, .study-deck-btn {
+.add-to-deck-btn, .view-deck-btn, .study-deck-btn, .delete-deck-btn {
     background-color: #C1423F;
     color: white;
     border: none;
@@ -439,8 +439,8 @@ footer a:hover::after {
     transition: background-color 0.3s;
 }
 
-.function-btn:hover {
-    background-color: #ff3333;
+.add-to-deck-btn:hover, .view-deck-btn:hover, .study-deck-btn:hover, .delete-deck-btn:hover{
+    background-color: #702121;
 }
 
 /* word table */
