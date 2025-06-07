@@ -1,94 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZWCD - View Deck</title>
-  <link rel="stylesheet" href="/static/style.css" />
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZWCD - View Deck</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
 
-<body>
-  <div class="nav">
-    <h1 class="nav-logo">
-      <a href="/">ZWCD</a> 
-      <span style="font-size: 50%">Chinese Language Learning Support</span>
-    </h1>
-    {% if logged_in %}
-      <a class="nav-item" href="/auth/logout">Logout</a>
-    {% else %}
-      <a class="nav-item" href="/auth/login">Login or Sign up</a>
-    {% endif %}
-  </div>
+  <body>
+    <div class="nav">
+      <h1 class="nav-logo">
+        <a href="/">ZWCD</a>
+        <span style="font-size: 50%">Chinese Language Learning Support</span>
+      </h1>
+      {% if logged_in %}
+        <a class="nav-item" href="/auth/logout">Logout</a>
+      {% else %}
+        <a class="nav-item" href="/auth/login">Login or Sign up</a>
+      {% endif %}
+    </div>
 
-  <div class="deck-view">
-    <h2 id="deckName"></h2>
-    <div id="deckWords"></div>
-    <a href="/decks" class="btn">Back to all decks</a>
-  </div>
+    <div class="deck-view">
+      <h2 id="deckName"></h2>
+      <div id="deckWords"></div>
+      <a href="/decks" class="btn">Back to all decks</a>
+    </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const deckId = window.location.pathname.split('/').pop();
-        
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const deckId = window.location.pathname.split('/').pop()
+      
         fetch(`/api/decks/${deckId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to fetch deck');
-                }
-                return response.json();
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Failed to fetch deck')
+            }
+            return response.json()
+          })
+          .then((deck) => {
+            document.getElementById('deckName').textContent = deck.name
+      
+            const container = document.getElementById('deckWords')
+            container.innerHTML = ''
+      
+            if (!deck.words || deck.words.length === 0) {
+              container.innerHTML = '<p>This deck has no words yet.</p>'
+              return
+            }
+      
+            // Create a container for all word items
+            const wordsContainer = document.createElement('div')
+            wordsContainer.className = 'words-container'
+      
+            deck.words.forEach((word) => {
+              const wordItem = document.createElement('div')
+              wordItem.className = 'word-item'
+      
+              // Format the word data
+              wordItem.innerHTML = `
+                          <div class="characters">
+                              <div><strong>Simplified: </strong><span class="simplified">${word.hanzi || word.simplified || ''}</span></div>
+                              ${word.traditional && word.traditional !== word.hanzi ? `<div><strong>Traditional: </strong><span class="traditional">${word.traditional}</span></div>` : ''}
+                          </div>
+                          <div class="pinyin"><br><strong>Pinyin: </strong>${word.pinyin || ''}</div>
+                          <br>
+                          <div class="definitions">
+                              <strong>Definition: </strong>
+                              ${
+                                word.definition
+                                  ? `<ul><li>${word.definition
+                                      .split(', ')
+                                      .map((def) => `<li>${def}</li>`)
+                                      .join('')}</ul>`
+                                  : 'No definition available'
+                              }
+                          </div>
+                          <hr>
+                      `
+      
+              wordsContainer.appendChild(wordItem)
             })
-            .then(deck => {
-                document.getElementById('deckName').textContent = deck.name;
-                
-                const wordsContainer = document.getElementById('deckWords');
-                if (deck.words.length === 0) {
-                    wordsContainer.innerHTML = '<p>This deck has no words yet.</p>';
-                    return;
-                }
-                
-                const wordsTable = document.createElement('table');
-                wordsTable.className = 'word-table';
-                
-                // Create table header
-                const headerRow = document.createElement('tr');
-                headerRow.innerHTML = `
-                    <th>Hanzi</th>
-                    <th>Pinyin</th>
-                    <th>Definition</th>
-                `;
-                wordsTable.appendChild(headerRow);
-                
-                // Add words to table
-                deck.words.forEach(word => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${word.hanzi || ''}</td>
-                        <td>${word.pinyin || ''}</td>
-                        <td>${word.definition || ''}</td>
-                    `;
-                    wordsTable.appendChild(row);
-                });
-                
-                wordsContainer.appendChild(wordsTable);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('deckWords').innerHTML = `
-                    <div class="error">
-                        <p>${error.message}</p>
-                        <button onclick="window.location.reload()">Retry</button>
-                    </div>
-                `;
-            });
-    });
-</script>
+      
+            container.appendChild(wordsContainer)
+          })
+          .catch((error) => {
+            console.error('Error:', error)
+            document.getElementById('deckWords').innerHTML = `
+                      <div class="error">
+                          <p>Error loading deck: ${error.message}</p>
+                          <button onclick="window.location.reload()">Retry</button>
+                      </div>
+                  `
+          })
+      })
+    </script>
 
-  <hr class="bottom" />
-  <footer class="site-footer">
-    <a href="/about">About</a>
-    <a href="/changelog">Changelog</a>
-    <a href="/privacy-policy">Privacy-policy</a>
-    <a href="/terms-of-use">Terms-of-use</a>
-  </footer>
-</body>
+    <hr class="bottom" />
+    <footer class="site-footer">
+      <a href="/about">About</a>
+      <a href="/changelog">Changelog</a>
+      <a href="/privacy-policy">Privacy-policy</a>
+      <a href="/terms-of-use">Terms-of-use</a>
+    </footer>
+  </body>
 </html>

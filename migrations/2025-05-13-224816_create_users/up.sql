@@ -19,7 +19,10 @@ CREATE TABLE decks (
 
 CREATE TABLE words (
     word_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    word TEXT NOT NULL
+    simplified TEXT NOT NULL,        
+    traditional TEXT,               
+    pinyin TEXT NOT NULL,            
+    definition TEXT NOT NULL      
 );
 
 create TABLE deck_words(

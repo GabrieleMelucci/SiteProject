@@ -26,7 +26,10 @@ diesel::table! {
 diesel::table! {
     words (word_id) {
         word_id -> Integer,
-        word -> Text,
+        simplified -> Text,
+        traditional -> Nullable<Text>,
+        pinyin -> Text,
+        definition -> Text,
     }
 }
 

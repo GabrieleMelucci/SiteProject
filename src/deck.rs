@@ -1,20 +1,25 @@
+use axum::extract::Path;
 use axum::{
     extract::{Json, State},
     http::StatusCode,
 };
-use serde::{Deserialize, Serialize};
 use diesel::prelude::*;
 use diesel::sql_types::Integer;
-use axum::extract::Path;
+use serde::{Deserialize, Serialize};
 
-use crate::{schema::{deck_words, decks, words}, utils, DbPool};
+use crate::{
+    DbPool,
+    schema::{deck_words, decks, words},
+    utils,
+};
 
 #[derive(Serialize)]
 pub struct DeckWord {
     pub id: i32,
-    pub hanzi: Option<String>,
-    pub pinyin: Option<String>,
-    pub definition: Option<String>,
+    pub simplified: String,
+    pub traditional: Option<String>,
+    pub pinyin: String,
+    pub definition: String,
 }
 
 #[derive(Serialize)]
@@ -58,7 +63,10 @@ pub struct ApiResponse {
 #[derive(Serialize, Queryable)]
 pub struct Word {
     pub id: i32,
-    pub word: String,
+    pub simplified: String,
+    pub traditional: Option<String>,
+    pub pinyin: String,
+    pub definition: String,
 }
 
 pub async fn list_decks(
@@ -102,25 +110,22 @@ pub async fn create_deck(
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    // Create the deck using the session user_id
     diesel::insert_into(decks::table)
         .values((
             decks::deck_name.eq(payload.name),
-            decks::user_id.eq(user_id), 
+            decks::user_id.eq(user_id),
         ))
         .execute(&mut conn)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
         })?;
 
-    // Get the last inserted ID
     let deck_id = diesel::select(diesel::dsl::sql::<Integer>("last_insert_rowid()"))
         .get_result::<i32>(&mut conn)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
         })?;
 
-    // Add word to deck if provided
     if let (Some(word_id), Some(word_data)) = (payload.word_id, payload.word_data) {
         add_word_to_deck_internal(&mut conn, deck_id, word_id, word_data).map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
@@ -158,18 +163,50 @@ fn add_word_to_deck_internal(
     word_id: i32,
     word_data: serde_json::Value,
 ) -> Result<(), diesel::result::Error> {
-    // Insert or update word in words table
+    let simplified = word_data.get("simplified")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| diesel::result::Error::DeserializationError(
+            "Missing simplified field".into()
+        ))?;
+    
+    let traditional = word_data.get("traditional")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    
+    let pinyin = word_data.get("pinyin")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| diesel::result::Error::DeserializationError(
+            "Missing pinyin field".into()
+        ))?;
+    
+    let definition = word_data.get("definitions")
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter()
+            .filter_map(|v| v.as_str())
+            .collect::<Vec<&str>>()
+            .join(", "))
+        .ok_or_else(|| diesel::result::Error::DeserializationError(
+            "Missing definitions field".into()
+        ))?;
+
     diesel::insert_into(words::table)
         .values((
             words::word_id.eq(word_id),
-            words::word.eq(word_data.to_string()),
+            words::simplified.eq(simplified),
+            words::traditional.eq(traditional.clone()),
+            words::pinyin.eq(pinyin),
+            words::definition.eq(&definition),
         ))
         .on_conflict(words::word_id)
         .do_update()
-        .set(words::word.eq(word_data.to_string()))
+        .set((
+            words::simplified.eq(simplified),
+            words::traditional.eq(traditional),
+            words::pinyin.eq(pinyin),
+            words::definition.eq(&definition),
+        ))
         .execute(conn)?;
 
-    // Add relationship in deck_words table
     diesel::insert_into(deck_words::table)
         .values((
             deck_words::deck_id.eq(deck_id),
@@ -185,7 +222,7 @@ fn add_word_to_deck_internal(
 pub async fn delete_deck(
     State(pool): State<DbPool>,
     session: tower_sessions::Session,
-    Path(deck_id): Path<i32>,  // Change from Json to Path
+    Path(deck_id): Path<i32>,
 ) -> Result<Json<ApiResponse>, (StatusCode, String)> {
     let user_id = match utils::get_current_user_id(&session).await {
         Some(id) => id,
@@ -197,7 +234,7 @@ pub async fn delete_deck(
     })?;
 
     let deck_exists = decks::table
-        .filter(decks::deck_id.eq(deck_id))  // Use the path parameter
+        .filter(decks::deck_id.eq(deck_id))
         .filter(decks::user_id.eq(user_id))
         .count()
         .get_result::<i64>(&mut conn)
@@ -209,22 +246,11 @@ pub async fn delete_deck(
         return Err((StatusCode::NOT_FOUND, "Deck not found".to_string()));
     }
 
-    // Transaction for atomic deletion
     conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        // First delete from deck_words
-        diesel::delete(
-            deck_words::table
-                .filter(deck_words::deck_id.eq(deck_id))
-        )
-        .execute(conn)?;
-        
-        // Then delete from decks
-        diesel::delete(
-            decks::table
-                .filter(decks::deck_id.eq(deck_id))
-        )
-        .execute(conn)
-    }).map_err(|e| {
+        diesel::delete(deck_words::table.filter(deck_words::deck_id.eq(deck_id))).execute(conn)?;
+        diesel::delete(decks::table.filter(decks::deck_id.eq(deck_id))).execute(conn)
+    })
+    .map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
@@ -239,15 +265,14 @@ pub async fn view_deck(
     State(pool): State<DbPool>,
     session: tower_sessions::Session,
 ) -> Result<Json<DeckWithWords>, (StatusCode, String)> {
-    let user_id = utils::get_current_user_id(&session).await.ok_or_else(|| {
-        (StatusCode::UNAUTHORIZED, "Not logged in".to_string())
-    })?;
+    let user_id = utils::get_current_user_id(&session)
+        .await
+        .ok_or_else(|| (StatusCode::UNAUTHORIZED, "Not logged in".to_string()))?;
 
     let mut conn = pool.get().map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    // Verify deck ownership and get deck name
     let (id, name): (i32, String) = decks::table
         .filter(decks::deck_id.eq(deck_id))
         .filter(decks::user_id.eq(user_id))
@@ -257,39 +282,31 @@ pub async fn view_deck(
             (StatusCode::NOT_FOUND, "Deck not found or access denied".to_string())
         })?;
 
-    // Get words for the deck
-    let words_data = deck_words::table
+    let words = deck_words::table
         .filter(deck_words::deck_id.eq(deck_id))
         .inner_join(words::table)
-        .select((words::word_id, words::word))
-        .load::<(i32, String)>(&mut conn)
+        .select((
+            words::word_id,
+            words::simplified,
+            words::traditional,
+            words::pinyin,
+            words::definition,
+        ))
+        .load::<(i32, String, Option<String>, String, String)>(&mut conn)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
-        })?;
+        })?
+        .into_iter()
+        .map(|(id, simplified, traditional, pinyin, definition)| DeckWord {
+            id,
+            simplified,
+            traditional,
+            pinyin,
+            definition,
+        })
+        .collect();
 
-    // Parse each word's JSON data
-    let mut words = Vec::new();
-    for (id, word_json) in words_data {
-        if let Ok(word_data) = serde_json::from_str::<serde_json::Value>(&word_json) {
-            words.push(DeckWord {
-                id,
-                hanzi: word_data.get("simplified").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                pinyin: word_data.get("pinyin").and_then(|v| v.as_str()).map(|s| s.to_string()),
-                definition: word_data.get("definitions")
-                    .and_then(|v| v.as_array())
-                    .map(|arr| arr.iter()
-                        .filter_map(|v| v.as_str())
-                        .collect::<Vec<&str>>()
-                        .join(", "))
-            });
-        }
-    }
-
-    Ok(Json(DeckWithWords {
-        id,
-        name,
-        words,
-    }))
+    Ok(Json(DeckWithWords { id, name, words }))
 }
 
 pub async fn get_deck_words(
@@ -297,15 +314,14 @@ pub async fn get_deck_words(
     session: tower_sessions::Session,
     Json(payload): Json<DeckId>,
 ) -> Result<Json<Vec<Word>>, (StatusCode, String)> {
-    let user_id = utils::get_current_user_id(&session).await.ok_or_else(|| {
-        (StatusCode::UNAUTHORIZED, "Not logged in".to_string())
-    })?;
+    let user_id = utils::get_current_user_id(&session)
+        .await
+        .ok_or_else(|| (StatusCode::UNAUTHORIZED, "Not logged in".to_string()))?;
 
     let mut conn = pool.get().map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    // Verify ownership
     let deck_owner: i32 = decks::table
         .filter(decks::deck_id.eq(payload.deck_id))
         .select(decks::user_id)
@@ -321,7 +337,13 @@ pub async fn get_deck_words(
     let words = deck_words::table
         .filter(deck_words::deck_id.eq(payload.deck_id))
         .inner_join(words::table)
-        .select((words::word_id, words::word))
+        .select((
+            words::word_id,
+            words::simplified,
+            words::traditional,
+            words::pinyin,
+            words::definition,
+        ))
         .load::<Word>(&mut conn)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
