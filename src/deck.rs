@@ -13,75 +13,85 @@ use crate::{
     utils,
 };
 
+/// Represents a word that belongs to a deck
 #[derive(Serialize)]
 pub struct DeckWord {
-    pub id: i32,
-    pub simplified: String,
-    pub traditional: Option<String>,
-    pub pinyin: String,
-    pub definition: String,
+    pub id: i32,              // Auto-generated word ID
+    pub simplified: String,   // Simplified Chinese characters
+    pub traditional: Option<String>, // Traditional Chinese characters (optional)
+    pub pinyin: String,       // Pinyin pronunciation
+    pub definition: String,   // English definition(s)
 }
 
+/// Represents a deck with all its words
 #[derive(Serialize)]
 pub struct DeckWithWords {
-    pub id: i32,
-    pub name: String,
-    pub words: Vec<DeckWord>,
+    pub id: i32,            // Deck ID
+    pub name: String,       // Deck name
+    pub words: Vec<DeckWord>, // Words in this deck
 }
 
+/// Request payload for deck-specific operations
 #[derive(Deserialize)]
 pub struct DeckId {
-    pub deck_id: i32,
+    pub deck_id: i32,      // Deck ID for operations
 }
 
+/// Basic deck information
 #[derive(Serialize)]
 pub struct Deck {
-    pub id: i32,
-    pub name: String,
+    pub id: i32,          // Deck ID
+    pub name: String,     // Deck name
 }
 
+/// Request payload for creating a new deck
 #[derive(Deserialize)]
 pub struct CreateDeckRequest {
-    pub name: String,
-    pub word_id: Option<i32>,
-    pub word_data: Option<serde_json::Value>,
+    pub name: String,                // Name for the new deck
+    pub word_data: Option<serde_json::Value>, // Optional initial word data
 }
 
+/// Request payload for adding a word to a deck
 #[derive(Deserialize)]
 pub struct AddWordRequest {
-    pub deck_id: i32,
-    pub word_id: i32,
-    pub word_data: serde_json::Value,
+    pub deck_id: i32,               // Deck ID to add word to
+    pub word_data: serde_json::Value, // Word data (simplified, pinyin, etc.)
 }
 
+/// Standard API response format
 #[derive(Serialize)]
 pub struct ApiResponse {
-    pub success: bool,
-    pub message: String,
+    pub success: bool,    // Operation status
+    pub message: String,  // Result message
 }
 
+/// Word representation from database
 #[derive(Serialize, Queryable)]
 pub struct Word {
-    pub id: i32,
-    pub simplified: String,
-    pub traditional: Option<String>,
-    pub pinyin: String,
-    pub definition: String,
+    pub id: i32,              // Auto-generated word ID
+    pub simplified: String,   // Simplified Chinese
+    pub traditional: Option<String>, // Traditional Chinese
+    pub pinyin: String,       // Pinyin pronunciation
+    pub definition: String,   // English definition(s)
 }
 
+/// Lists all decks for the current user
 pub async fn list_decks(
     State(pool): State<DbPool>,
     session: tower_sessions::Session,
 ) -> Result<Json<Vec<Deck>>, (StatusCode, String)> {
+    // Get current user ID from session
     let user_id = match utils::get_current_user_id(&session).await {
         Some(id) => id,
         None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
     };
 
+    // Get database connection
     let mut conn = pool.get().map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
+    // Query all decks belonging to this user
     let decks = decks::table
         .filter(decks::user_id.eq(user_id))
         .select((decks::deck_id, decks::deck_name))
@@ -96,11 +106,13 @@ pub async fn list_decks(
     Ok(Json(decks))
 }
 
+/// Creates a new deck with optional initial word
 pub async fn create_deck(
     State(pool): State<DbPool>,
     session: tower_sessions::Session,
     Json(payload): Json<CreateDeckRequest>,
 ) -> Result<Json<ApiResponse>, (StatusCode, String)> {
+    // Verify user is logged in
     let user_id = match utils::get_current_user_id(&session).await {
         Some(id) => id,
         None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
@@ -110,27 +122,30 @@ pub async fn create_deck(
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    diesel::insert_into(decks::table)
-        .values((
-            decks::deck_name.eq(payload.name),
-            decks::user_id.eq(user_id),
-        ))
-        .execute(&mut conn)
-        .map_err(|e| {
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
-        })?;
+    // Use transaction to ensure atomicity
+    conn.transaction::<_, diesel::result::Error, _>(|conn| {
+        // Create the new deck
+        diesel::insert_into(decks::table)
+            .values((
+                decks::deck_name.eq(&payload.name),
+                decks::user_id.eq(user_id),
+            ))
+            .execute(conn)?;
 
-    let deck_id = diesel::select(diesel::dsl::sql::<Integer>("last_insert_rowid()"))
-        .get_result::<i32>(&mut conn)
-        .map_err(|e| {
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
-        })?;
+        // Get the auto-generated deck ID
+        let deck_id = diesel::select(diesel::dsl::sql::<Integer>("last_insert_rowid()"))
+            .get_result::<i32>(conn)?;
 
-    if let (Some(word_id), Some(word_data)) = (payload.word_id, payload.word_data) {
-        add_word_to_deck_internal(&mut conn, deck_id, word_id, word_data).map_err(|e| {
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
-        })?;
-    }
+        // Add initial word if provided
+        if let Some(word_data) = payload.word_data {
+            add_word_to_deck_internal(conn, deck_id, word_data)?;
+        }
+
+        Ok(())
+    })
+    .map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
 
     Ok(Json(ApiResponse {
         success: true,
@@ -138,15 +153,40 @@ pub async fn create_deck(
     }))
 }
 
+/// Adds a word to an existing deck
 pub async fn add_word_to_deck(
     State(pool): State<DbPool>,
+    session: tower_sessions::Session,
     Json(payload): Json<AddWordRequest>,
 ) -> Result<Json<ApiResponse>, (StatusCode, String)> {
+    // Verify user is logged in
+    let user_id = match utils::get_current_user_id(&session).await {
+        Some(id) => id,
+        None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
+    };
+
     let mut conn = pool.get().map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
-    add_word_to_deck_internal(&mut conn, payload.deck_id, payload.word_id, payload.word_data)
+    // Verify the user owns the deck they're trying to modify
+    let deck_owner: i32 = decks::table
+        .filter(decks::deck_id.eq(payload.deck_id))
+        .select(decks::user_id)
+        .first(&mut conn)
+        .map_err(|e| match e {
+            diesel::result::Error::NotFound => {
+                (StatusCode::NOT_FOUND, "Deck not found".to_string())
+            }
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e)),
+        })?;
+
+    if deck_owner != user_id {
+        return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
+    }
+
+    // Add the word to the deck
+    add_word_to_deck_internal(&mut conn, payload.deck_id, payload.word_data)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
         })?;
@@ -157,12 +197,14 @@ pub async fn add_word_to_deck(
     }))
 }
 
+/// Internal function to handle word addition to a deck
+/// Returns the auto-generated word ID
 fn add_word_to_deck_internal(
     conn: &mut SqliteConnection,
     deck_id: i32,
-    word_id: i32,
     word_data: serde_json::Value,
-) -> Result<(), diesel::result::Error> {
+) -> Result<i32, diesel::result::Error> {
+    // Extract and validate required word fields
     let simplified = word_data.get("simplified")
         .and_then(|v| v.as_str())
         .ok_or_else(|| diesel::result::Error::DeserializationError(
@@ -179,34 +221,35 @@ fn add_word_to_deck_internal(
             "Missing pinyin field".into()
         ))?;
     
-    let definition = word_data.get("definitions")
-        .and_then(|v| v.as_array())
-        .map(|arr| arr.iter()
-            .filter_map(|v| v.as_str())
-            .collect::<Vec<&str>>()
-            .join(", "))
-        .ok_or_else(|| diesel::result::Error::DeserializationError(
-            "Missing definitions field".into()
-        ))?;
+    // Handle definitions which might be an array or a single string
+    let definition = match word_data.get("definitions") {
+        Some(serde_json::Value::Array(arr)) => {
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .collect::<Vec<&str>>()
+                .join(", ")
+        },
+        Some(serde_json::Value::String(s)) => s.clone(),
+        _ => return Err(diesel::result::Error::DeserializationError(
+            "Missing or invalid definitions field".into()
+        )),
+    };
 
+    // Insert the new word (ID will be auto-generated)
     diesel::insert_into(words::table)
         .values((
-            words::word_id.eq(word_id),
-            words::simplified.eq(simplified),
-            words::traditional.eq(traditional.clone()),
-            words::pinyin.eq(pinyin),
-            words::definition.eq(&definition),
-        ))
-        .on_conflict(words::word_id)
-        .do_update()
-        .set((
             words::simplified.eq(simplified),
             words::traditional.eq(traditional),
             words::pinyin.eq(pinyin),
-            words::definition.eq(&definition),
+            words::definition.eq(definition),
         ))
         .execute(conn)?;
 
+    // Get the last inserted row id (SQLite specific)
+    let word_id = diesel::select(diesel::dsl::sql::<Integer>("last_insert_rowid()"))
+        .get_result::<i32>(conn)?;
+
+    // Add to the deck_words junction table
     diesel::insert_into(deck_words::table)
         .values((
             deck_words::deck_id.eq(deck_id),
@@ -216,14 +259,16 @@ fn add_word_to_deck_internal(
         .do_nothing()
         .execute(conn)?;
 
-    Ok(())
+    Ok(word_id)
 }
 
+/// Deletes a deck and all its words
 pub async fn delete_deck(
     State(pool): State<DbPool>,
     session: tower_sessions::Session,
     Path(deck_id): Path<i32>,
 ) -> Result<Json<ApiResponse>, (StatusCode, String)> {
+    // Verify user is logged in
     let user_id = match utils::get_current_user_id(&session).await {
         Some(id) => id,
         None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
@@ -233,6 +278,7 @@ pub async fn delete_deck(
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
+    // Verify the deck exists and belongs to this user
     let deck_exists = decks::table
         .filter(decks::deck_id.eq(deck_id))
         .filter(decks::user_id.eq(user_id))
@@ -246,9 +292,14 @@ pub async fn delete_deck(
         return Err((StatusCode::NOT_FOUND, "Deck not found".to_string()));
     }
 
+    // Use transaction to atomically delete deck and its words
     conn.transaction::<_, diesel::result::Error, _>(|conn| {
-        diesel::delete(deck_words::table.filter(deck_words::deck_id.eq(deck_id))).execute(conn)?;
-        diesel::delete(decks::table.filter(decks::deck_id.eq(deck_id))).execute(conn)
+        // First delete from junction table
+        diesel::delete(deck_words::table.filter(deck_words::deck_id.eq(deck_id)))
+            .execute(conn)?;
+        // Then delete the deck itself
+        diesel::delete(decks::table.filter(decks::deck_id.eq(deck_id)))
+            .execute(conn)
     })
     .map_err(|e| {
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
@@ -260,11 +311,13 @@ pub async fn delete_deck(
     }))
 }
 
+/// Views a deck with all its words
 pub async fn view_deck(
     Path(deck_id): Path<i32>,
     State(pool): State<DbPool>,
     session: tower_sessions::Session,
 ) -> Result<Json<DeckWithWords>, (StatusCode, String)> {
+    // Verify user is logged in
     let user_id = utils::get_current_user_id(&session)
         .await
         .ok_or_else(|| (StatusCode::UNAUTHORIZED, "Not logged in".to_string()))?;
@@ -273,6 +326,7 @@ pub async fn view_deck(
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
+    // Get basic deck info
     let (id, name): (i32, String) = decks::table
         .filter(decks::deck_id.eq(deck_id))
         .filter(decks::user_id.eq(user_id))
@@ -282,6 +336,7 @@ pub async fn view_deck(
             (StatusCode::NOT_FOUND, "Deck not found or access denied".to_string())
         })?;
 
+    // Get all words in this deck
     let words = deck_words::table
         .filter(deck_words::deck_id.eq(deck_id))
         .inner_join(words::table)
@@ -309,11 +364,13 @@ pub async fn view_deck(
     Ok(Json(DeckWithWords { id, name, words }))
 }
 
+/// Gets all words in a specific deck
 pub async fn get_deck_words(
     State(pool): State<DbPool>,
     session: tower_sessions::Session,
     Json(payload): Json<DeckId>,
 ) -> Result<Json<Vec<Word>>, (StatusCode, String)> {
+    // Verify user is logged in
     let user_id = utils::get_current_user_id(&session)
         .await
         .ok_or_else(|| (StatusCode::UNAUTHORIZED, "Not logged in".to_string()))?;
@@ -322,6 +379,7 @@ pub async fn get_deck_words(
         (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
     })?;
 
+    // Verify deck ownership
     let deck_owner: i32 = decks::table
         .filter(decks::deck_id.eq(payload.deck_id))
         .select(decks::user_id)
@@ -334,6 +392,7 @@ pub async fn get_deck_words(
         return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
     }
 
+    // Get all words in the deck
     let words = deck_words::table
         .filter(deck_words::deck_id.eq(payload.deck_id))
         .inner_join(words::table)
