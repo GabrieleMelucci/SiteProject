@@ -32,7 +32,7 @@
                            autocorrect="off" 
                            spellcheck="false" 
                            lang="zh" 
-                           placeholder="Type a hanzi, word or sentence" 
+                           placeholder="Type a hanzi or a word" 
                            class="autofocus" 
                            autofocus 
                            required>
@@ -157,7 +157,7 @@
             container.innerHTML = '';
             
             if (!results || results.length === 0) {
-                container.innerHTML = '<p>No results found. Try a different search term.</p><hr>';
+                container.innerHTML = '<p>No results found. Try a different search term.</p>';
                 return;
             }
             

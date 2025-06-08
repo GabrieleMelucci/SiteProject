@@ -543,3 +543,7 @@ footer a:hover::after {
 .add-to-deck-btn:hover, .view-deck-btn:hover, .study-deck-btn:hover, .delete-deck-btn:hover, .btn:hover{
     background-color: #702121;
 }
+
+.btn {
+    text-decoration: none;
+}

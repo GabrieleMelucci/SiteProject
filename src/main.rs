@@ -97,7 +97,7 @@ async fn main() {
         // Decks management
         .route("/decks", get(decks_management))
         .route("/deck/{deck_id}", get(deck_view_page))
-        .route("/deck/{deck_id}/study", get(deck_view_page))
+        .route("/deck/{deck_id}/study", get(study_page))
         // Auth routes
         .nest("/auth", auth_router)
         // API routes
@@ -219,4 +219,15 @@ async fn deck_view_page(
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     context.insert("deck_id", &deck_id);
     utils::render_template(&templates, "view-deck.html", context).into_response()
+}
+
+async fn study_page(
+    Path(deck_id): Path<i32>,
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
+    let mut context = tera::Context::new();
+    context.insert("logged_in", &utils::is_logged_in(&session).await);
+    context.insert("deck_id", &deck_id);
+    utils::render_template(&templates, "study-deck.html", context).into_response()
 }
