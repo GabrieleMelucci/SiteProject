@@ -32,7 +32,7 @@
                            autocorrect="off" 
                            spellcheck="false" 
                            lang="zh" 
-                           placeholder="Type a hanzi, word or sentence" 
+                           placeholder="Type a hanzi or a word" 
                            class="autofocus" 
                            autofocus 
                            required>
@@ -76,7 +76,6 @@
 
     <script>
         // Global variables to track current word being added
-        let currentWordId = null;
         let currentWordData = null;
         let currentUserId = {{ user_id | default(value="null") }};
 
@@ -109,9 +108,7 @@
                 const query = document.getElementById('searchInput').value.trim();
                 const lang = document.getElementById('searchLang').value;
                 if (query) {
-                    // Update URL without reloading
-                    window.history.pushState({}, '', `/search?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(lang)}`);
-                    performSearch(query, lang);
+                    window.location.href = `/search?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(lang)}`;
                 }
             });
 
@@ -140,7 +137,12 @@
             document.getElementById('searchLang').value = lang;
             
             fetch(`/api/search?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(lang)}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => displayResults(data.results))
                 .catch(error => {
                     console.error('Search error:', error);
@@ -155,42 +157,54 @@
             container.innerHTML = '';
             
             if (!results || results.length === 0) {
-                container.innerHTML = '<p>No results found. Try a different search term.</p><hr>';
+                container.innerHTML = '<p>No results found. Try a different search term.</p>';
                 return;
             }
             
             results.forEach(result => {
                 const resultDiv = document.createElement('div');
                 resultDiv.className = 'result-item';
+                
+                // Ensure definitions is always an array
+                const definitions = Array.isArray(result.definitions) ? 
+                    result.definitions : 
+                    [result.definitions || 'No definition available'];
+                
                 resultDiv.innerHTML = `
                     <div class="characters">
-                        <div><strong>Traditional: </strong><span class="traditional">${result.traditional || ''}</span></div>
+                        <div><strong>Traditional: </strong><span class="traditional">${result.traditional || result.simplified || ''}</span></div>
                         ${result.simplified !== result.traditional ? 
                         `<div><strong>Simplified: </strong><span class="simplified">${result.simplified || ''}</span></div>` : ''}
                     </div>
                     <div class="pinyin"><br><strong>Pinyin: </strong>${result.pinyin || ''}</div>
                     <br>
                     <ul class="definitions">
-                        ${result.definitions.map(def => `<li>${def || ''}</li>`).join('')}
+                        ${definitions.map(def => `<li>${def || ''}</li>`).join('')}
                     </ul>
-                    <button class="add-to-deck-btn" data-word-id="${result.id}" data-word-data="${encodeURIComponent(JSON.stringify(result))}">
+                    <button class="add-to-deck-btn">
                         Add to Deck
                     </button>
                     <hr>
                 `;
                 container.appendChild(resultDiv);
-            });
 
-            // Add event listeners to all add-to-deck buttons
-            document.querySelectorAll('.add-to-deck-btn').forEach(button => {
+                // Add event listener to the button we just created
+                const button = resultDiv.querySelector('.add-to-deck-btn');
                 button.addEventListener('click', function() {
                     if (!currentUserId) {
                         alert('Please log in to add words to decks');
                         window.location.href = '/auth/login';
                         return;
                     }
-                    currentWordId = this.getAttribute('data-word-id');
-                    currentWordData = JSON.parse(decodeURIComponent(this.getAttribute('data-word-data')));
+                    
+                    // Prepare word data for the backend
+                    currentWordData = {
+                        simplified: result.simplified,
+                        traditional: result.traditional || result.simplified,
+                        pinyin: result.pinyin,
+                        definitions: definitions
+                    };
+                    
                     showDeckSelection();
                 });
             });
@@ -198,21 +212,28 @@
 
         // Show deck selection modal
         function showDeckSelection() {
-            fetch(`/api/decks?user_id=${currentUserId}`)
+            fetch(`/api/decks`)
                 .then(response => {
-                    if (!response.ok) throw new Error('Failed to fetch decks');
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     return response.json();
                 })
                 .then(decks => {
                     const select = document.getElementById('deckSelect');
                     select.innerHTML = '<option value="">Select a deck</option>';
                     
-                    decks.forEach(deck => {
+                    if (decks.length === 0) {
                         const option = document.createElement('option');
-                        option.value = deck.id;
-                        option.textContent = deck.name;
+                        option.textContent = 'No decks available - create one below';
+                        option.disabled = true;
                         select.appendChild(option);
-                    });
+                    } else {
+                        decks.forEach(deck => {
+                            const option = document.createElement('option');
+                            option.value = deck.id;
+                            option.textContent = deck.name;
+                            select.appendChild(option);
+                        });
+                    }
                     
                     document.getElementById('deckModal').style.display = 'block';
                 })
@@ -230,19 +251,28 @@
                 return;
             }
 
+            console.log('Adding to deck:', {
+                deck_id: deckId,
+                word_data: currentWordData
+            });
+
             fetch('/api/decks/add-word', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include', // Important for session cookies
                 body: JSON.stringify({
                     deck_id: parseInt(deckId),
-                    word_id: parseInt(currentWordId),
                     word_data: currentWordData
                 })
             })
             .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || 'Failed to add word to deck');
+                    });
+                }
                 return response.json();
             })
             .then(data => {
@@ -250,12 +280,12 @@
                     alert('Word added to deck successfully!');
                     document.getElementById('deckModal').style.display = 'none';
                 } else {
-                    alert('Error: ' + data.message);
+                    alert('Error: ' + (data.message || 'Unknown error'));
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error adding word to deck');
+                alert('Error adding word to deck: ' + error.message);
             });
         }
 
@@ -279,13 +309,17 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
+                    credentials: 'include',
                     body: JSON.stringify({
                         name: deckName,
-                        user_id: currentUserId,
-                        word_id: parseInt(currentWordId),
                         word_data: currentWordData
                     })
                 });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to create deck');
+                }
 
                 const data = await response.json();
                 if (data.success) {
@@ -295,20 +329,22 @@
                     // Refresh deck list
                     showDeckSelection();
                 } else {
-                    alert('Error: ' + data.message);
+                    throw new Error(data.message || 'Unknown error creating deck');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error creating deck');
+                alert('Error creating deck: ' + error.message);
             }
         }
     </script>
 
+    <hr class="bottom" />
     <footer class="site-footer">
         <a href="/about">About</a>
         <a href="/changelog">Changelog</a>
         <a href="/privacy-policy">Privacy-policy</a>
         <a href="/terms-of-use">Terms-of-use</a>
     </footer>
+    <br>
 </body>
 </html>

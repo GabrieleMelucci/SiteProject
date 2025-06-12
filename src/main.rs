@@ -1,8 +1,8 @@
 use axum::{
     Router,
-    extract::Extension,
+    extract::{Extension, Path},
     response::{IntoResponse, Redirect},
-    routing::{get, get_service, post},
+    routing::{get, get_service, post, delete},
 };
 use diesel::{
     SqliteConnection,
@@ -18,7 +18,7 @@ use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 mod auth;
 mod deck;
 mod login;
-mod model;
+mod user;
 mod parser;
 mod register;
 mod schema;
@@ -57,8 +57,11 @@ async fn main() {
     // Build routers
     let deck_api_router = Router::new()
         .route("/", get(deck::list_decks))
+        .route("/{deck_id}", delete(deck::delete_deck))
+        .route("/words", get(deck::get_deck_words))
         .route("/create", post(deck::create_deck))
         .route("/add-word", post(deck::add_word_to_deck))
+        .route("/{deck_id}", get(deck::view_deck))
         .with_state(pool.clone())
         .layer(session_layer.clone());
 
@@ -93,6 +96,8 @@ async fn main() {
         .route("/dashboard", get(dashboard))
         // Decks management
         .route("/decks", get(decks_management))
+        .route("/deck/{deck_id}", get(deck_view_page))
+        .route("/deck/{deck_id}/study", get(study_page))
         // Auth routes
         .nest("/auth", auth_router)
         // API routes
@@ -121,7 +126,9 @@ async fn main() {
 
 // Handlers
 async fn root_handler(
-    Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     if utils::is_logged_in(&session).await {
         let mut context = tera::Context::new();
         context.insert("logged_in", &utils::is_logged_in(&session).await);
@@ -133,37 +140,63 @@ async fn root_handler(
     }
 }
 
-async fn dashboard(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn dashboard(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "dashboard.html", context).into_response()
 }
 
-async fn decks_management(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn decks_management(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
-    context.insert("logged_in", &utils::is_logged_in(&session).await);
+    let logged_in = utils::is_logged_in(&session).await;
+    context.insert("logged_in", &logged_in);
+
+    if logged_in {
+        if let Some(user_id) = utils::get_current_user_id(&session).await {
+            context.insert("user_id", &user_id);
+        }
+    }
+
     utils::render_template(&templates, "decks_management.html", context).into_response()
 }
 
-async fn about(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn about(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "about.html", context).into_response()
 }
 
-async fn changelog(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn changelog(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "changelog.html", context).into_response()
 }
 
-async fn privacy_policy(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn privacy_policy(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "privacy-policy.html", context).into_response()
 }
 
-async fn terms_of_use(Extension(templates): Extension<Arc<Tera>>, session: tower_sessions::Session) -> impl IntoResponse {
+async fn terms_of_use(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     utils::render_template(&templates, "terms-of-use.html", context).into_response()
@@ -175,4 +208,26 @@ async fn handle_logout(session: tower_sessions::Session) -> Result<Redirect, aut
         auth::LoginError::SessionError("Failed to logout".into())
     })?;
     Ok(Redirect::to("/"))
+}
+
+async fn deck_view_page(
+    Path(deck_id): Path<i32>,
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
+    let mut context = tera::Context::new();
+    context.insert("logged_in", &utils::is_logged_in(&session).await);
+    context.insert("deck_id", &deck_id);
+    utils::render_template(&templates, "view-deck.html", context).into_response()
+}
+
+async fn study_page(
+    Path(deck_id): Path<i32>,
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
+    let mut context = tera::Context::new();
+    context.insert("logged_in", &utils::is_logged_in(&session).await);
+    context.insert("deck_id", &deck_id);
+    utils::render_template(&templates, "study-deck.html", context).into_response()
 }

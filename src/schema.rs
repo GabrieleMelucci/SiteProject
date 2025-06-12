@@ -26,7 +26,11 @@ diesel::table! {
 diesel::table! {
     words (word_id) {
         word_id -> Integer,
-        word -> Text,
+        simplified -> Text,
+        traditional -> Nullable<Text>,
+        pinyin -> Text,
+        definition -> Text,
+        added_at -> Timestamp,
     }
 }
 
@@ -40,3 +44,17 @@ diesel::allow_tables_to_appear_in_same_query!(
     users,
     words,
 );
+
+diesel::table! {
+    srs_reviews (review_id) {
+        review_id -> Integer,
+        word_id -> Integer,
+        deck_id -> Integer,
+        user_id -> Integer,
+        review_date -> Timestamp,
+        next_review_date -> Timestamp,
+        ease_factor -> Double,
+        interval -> Integer,
+        performance -> Integer,
+    }
+}

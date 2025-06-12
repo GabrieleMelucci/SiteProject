@@ -1,29 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - ZWCD</title>
+    <title>ZWCD - Chinese Language Support</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
+    
     <div class="nav">
         <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
+        {% if logged_in %}
+        <a class="nav-item" href="/auth/logout">Logout</a>
+        {% else %}
+        <a class="nav-item" href="/auth/login">Login or Sign up</a>
+        {% endif %}
     </div>
 
-    <div class="register-box">
-        <h2 class="form-title">Sign in to ZWCD</h2>
-        <form action="/auth/login" method="POST">
-            <input type="email" placeholder="Email" name="email" required class="form-input">
-            <input type="password" placeholder="Password" minlength="8" name="password" required class="form-input">
-
-            <button type="submit" class="form-button">Sign In</button>
-        </form>
-
-        <p class="form-footer">
-            Don't have an account? <a href="/auth/register">Register</a>
-        </p>
-    </div>
+    <hr class="bottom">
 
     <footer class="site-footer">
         <a href="/about">About</a>
@@ -31,5 +27,6 @@
         <a href="/privacy-policy">Privacy-policy</a>
         <a href="/terms-of-use">Terms-of-use</a>
     </footer>
+    <br>
 </body>
 </html>

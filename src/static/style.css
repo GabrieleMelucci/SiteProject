@@ -34,7 +34,7 @@ footer a::after{
     bottom: 0px;
     left: 5%;
     background-color: #ffffff;
-    transition: width 0.3s ease, left 0.3s ease; /* Animazione fluida */
+    transition: width 0.3s ease, left 0.3s ease;
 }
 
 
@@ -104,7 +104,7 @@ footer a:hover::after {
     bottom: 0px;
     left: 5%;
     background-color: #ffffff;
-    transition: width 0.3s ease, left 0.3s ease; /* Animazione fluida */
+    transition: width 0.3s ease, left 0.3s ease; 
 }
 
 .dashboard-section a:hover {
@@ -230,18 +230,21 @@ footer a:hover::after {
     transform: translateY(-2px);
 }
 
-/* Search results styling */
-.results-container {
+/* Shared styles for both search results and deck view */
+.results-container,
+.deck-container {
     margin-top: 20px;
 }
 
-.result-count {
+.result-count,
+.deck-count {
     color: #d3d3d3;
     margin-bottom: 20px;
     font-style: italic;
 }
 
-.result-item {
+.result-item,
+.deck-word-item {
     background-color: #1e1e1e;
     border-radius: 5px;
     padding: 20px;
@@ -250,34 +253,42 @@ footer a:hover::after {
     transition: all 0.3s ease;
 }
 
-.result-item:hover {
+.result-item:hover,
+.deck-word-item:hover {
     transform: translateX(5px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* Character display row */
-.character-row {
+.character-row,
+.deck-character-row {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
     gap: 15px;
 }
 
-.simplified, .traditional {
+.simplified, 
+.traditional,
+.deck-simplified,
+.deck-traditional {
     font-size: 2rem;
     font-weight: bold;
 }
 
-.pinyin {
+.pinyin,
+.deck-pinyin {
     color: #ff9999;
     font-size: 1.2rem;
 }
 
-.definitions {
+.definitions,
+.deck-definitions {
     margin-top: 10px;
 }
 
-.definition {
+.definition,
+.deck-definition {
     display: inline-block;
     background-color: #2a2a2a;
     padding: 5px 10px;
@@ -285,6 +296,96 @@ footer a:hover::after {
     margin-bottom: 8px;
     border-radius: 3px;
     font-size: 0.9rem;
+}
+
+/* Deck-specific additions */
+.deck-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.deck-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.deck-word-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+/* Word action buttons */
+.word-action-btn {
+    background-color: #3a3a3a;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.word-action-btn:hover {
+    background-color: #C1423F;
+}
+
+/* Deck management buttons */
+.deck-management-btn {
+    background-color: #3a3a3a;
+    border: none;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.deck-management-btn:hover {
+    background-color: #C1423F;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .character-row,
+    .deck-character-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .simplified,
+    .traditional,
+    .deck-simplified,
+    .deck-traditional {
+        font-size: 1.5rem;
+    }
+    
+    .pinyin,
+    .deck-pinyin {
+        font-size: 1rem;
+    }
+}
+
+/* Empty state styles */
+.empty-deck-message {
+    text-align: center;
+    padding: 30px;
+    color: #d3d3d3;
+    font-style: italic;
+    background-color: #2a2a2a;
+    border-radius: 5px;
+}
+
+/* Error state styles */
+.deck-error {
+    color: #ff6b6b;
+    padding: 15px;
+    background-color: #2a2a2a;
+    border-radius: 5px;
+    margin-bottom: 20px;
 }
 
 /* Error message styling */
@@ -427,8 +528,8 @@ footer a:hover::after {
     border-top: 1px solid #3e3e3e;
 }
 
-/* Add to deck button */
-.add-to-deck-btn {
+/* buttons */
+.add-to-deck-btn, .view-deck-btn, .study-deck-btn, .delete-deck-btn, .btn {
     background-color: #C1423F;
     color: white;
     border: none;
@@ -439,6 +540,10 @@ footer a:hover::after {
     transition: background-color 0.3s;
 }
 
-.add-to-deck-btn:hover {
-    background-color: #ff3333;
+.add-to-deck-btn:hover, .view-deck-btn:hover, .study-deck-btn:hover, .delete-deck-btn:hover, .btn:hover{
+    background-color: #702121;
+}
+
+.btn {
+    text-decoration: none;
 }
