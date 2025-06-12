@@ -2,7 +2,7 @@ use axum::{
     Router,
     extract::{Extension, Path},
     response::{IntoResponse, Redirect},
-    routing::{get, get_service, post, delete},
+    routing::{delete, get, get_service, post},
 };
 use diesel::{
     SqliteConnection,
@@ -18,11 +18,11 @@ use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 mod auth;
 mod deck;
 mod login;
-mod user;
 mod parser;
 mod register;
 mod schema;
 mod search;
+mod user;
 mod utils;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
@@ -42,12 +42,13 @@ async fn main() {
     let dict_data = Arc::new(parser::parse_cedict());
 
     // Templates configuration
-    let templates = Tera::new("templates/**/*.html").unwrap_or_else(|e| {
+    let template_path = format!("{}/src/templates/**/*.html", env!("CARGO_MANIFEST_DIR"));
+    let templates = Tera::new(&template_path).unwrap_or_else(|e| {
         eprintln!("Template parsing error: {}", e);
         std::process::exit(1);
     });
     let templates = Arc::new(templates);
-
+    
     // Sessions configuration
     let session_store = MemoryStore::default();
     let session_layer = SessionManagerLayer::new(session_store)
@@ -103,7 +104,7 @@ async fn main() {
         // API routes
         .nest("/api", api_router)
         // Static files
-        .nest_service("/static", get_service(ServeDir::new("static")))
+        .nest_service("/static", get_service(ServeDir::new("src/static")))
         // Shared state and layers
         .layer(Extension(templates))
         .layer(session_layer);
