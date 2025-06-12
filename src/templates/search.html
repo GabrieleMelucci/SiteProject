@@ -1,80 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ZWCD - Search Results</title>
-    <link rel="stylesheet" href="/static/style.css" />
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-</head>
+{% extends 'base.html' %}
 
-<body>
-    <div class="nav">
-        <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
-        {% if logged_in %}
-        <a class="nav-item" href="/auth/logout">Logout</a>
-        {% else %}
-        <a class="nav-item" href="/auth/login">Login or Sign up</a>
-        {% endif %}
+{% block content %}
+  <div class="container">
+    <div class="container bugfix">
+      <form id="searchForm" action="/search" method="get" style="margin: 0;">
+        <div style="display: flex">
+          <input type="search" name="q" id="searchInput" value="{{ query|default(value='') }}" tabindex="1" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" lang="zh" placeholder="Type a hanzi or a word" class="autofocus" autofocus required />
+
+          <select id="searchLang" name="lang" style="flex-grow: 0;flex-shrink: 1;width: auto;margin-left: 0.3rem;" class="lang-select">
+            <option value="english">EN</option>
+            <option value="chinese" selected>CN</option>
+          </select>
+        </div>
+        <input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;" tabindex="-1" />
+      </form>
     </div>
 
-    <div class="container">
-        <div class="container bugfix">
-            <form id="searchForm" action="/search" method="get" style="margin: 0;">
-                <div style="display: flex">
-                    <input type="search" 
-                           name="q" 
-                           id="searchInput" 
-                           value="{{ query | default(value='') }}"
-                           tabindex="1" 
-                           autocapitalize="off" 
-                           autocomplete="off" 
-                           autocorrect="off" 
-                           spellcheck="false" 
-                           lang="zh" 
-                           placeholder="Type a hanzi or a word" 
-                           class="autofocus" 
-                           autofocus 
-                           required>
-                    
-                    <select id="searchLang" 
-                            name="lang" 
-                            style="flex-grow: 0;flex-shrink: 1;width: auto;margin-left: 0.3rem;" 
-                            class="lang-select">
-                        <option value="english">EN</option>
-                        <option value="chinese" selected>CN</option>
-                    </select>
-                </div>
-                <input type="submit" style="position: absolute; left: -9999px; width: 1px; height: 1px;" tabindex="-1">
-            </form>
-        </div>
-
-        <div id="searchResults">
-            <h2>Search Results</h2>
-            <div id="resultsContainer"></div>
-        </div>
+    <div id="searchResults">
+      <h2>Search Results</h2>
+      <div id="resultsContainer"></div>
     </div>
+  </div>
 
-    <!-- Deck selection modal -->
-    <div id="deckModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h3>Add to Deck</h3>
-            <div id="deckSelection">
-                <select id="deckSelect" class="form-input">
-                    <option value="">Select a deck</option>
-                </select>
-                <button id="addToDeckBtn" class="form-button">Add to Deck</button>
-                <div class="new-deck-section">
-                    <h4>Or create new deck</h4>
-                    <input type="text" id="newDeckName" class="form-input" placeholder="New deck name">
-                    <button id="createDeckBtn" class="form-button">Create and Add</button>
-                </div>
-            </div>
+  <!-- Deck selection modal -->
+  <div id="deckModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Add to Deck</h3>
+      <div id="deckSelection">
+        <select id="deckSelect" class="form-input">
+          <option value="">Select a deck</option>
+        </select>
+        <button id="addToDeckBtn" class="form-button">Add to Deck</button>
+        <div class="new-deck-section">
+          <h4>Or create new deck</h4>
+          <input type="text" id="newDeckName" class="form-input" placeholder="New deck name" />
+          <button id="createDeckBtn" class="form-button">Create and Add</button>
         </div>
+      </div>
     </div>
+  </div>
 
-    <script>
+  <script>
         // Global variables to track current word being added
         let currentWordData = null;
         let currentUserId = {{ user_id | default(value="null") }};
@@ -337,14 +304,4 @@
             }
         }
     </script>
-
-    <hr class="bottom" />
-    <footer class="site-footer">
-        <a href="/about">About</a>
-        <a href="/changelog">Changelog</a>
-        <a href="/privacy-policy">Privacy-policy</a>
-        <a href="/terms-of-use">Terms-of-use</a>
-    </footer>
-    <br>
-</body>
-</html>
+{% endblock %}

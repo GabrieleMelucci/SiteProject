@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZWCD - Chinese Language Support</title>
+    <title>{% block title %}ZWCD - Chinese Language Support{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -16,6 +16,8 @@
         <a class="nav-item" href="/auth/login">Login or Sign up</a>
         {% endif %}
     </div>
+
+    {% block content %}{% endblock %}
 
     <hr class="bottom">
     <footer class="site-footer">

@@ -1,16 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Register - ZWCD</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
+{% extends "base.html" %}
 
-  <body>
-    <div class="nav">
-      <h1 class="nav-logo"><a href="/">ZWCD</a> <span style="font-size: 50%">Chinese Language Learning Support</span></h1>
-    </div>
+{% block content %}
 
     <div class="register-box">
       <h2 class="form-title">Sign up to ZWCD</h2>
@@ -64,12 +54,4 @@
       </p>
     </div>
 
-    <footer class="site-footer">
-      <a href="/about">About</a>
-      <a href="/changelog">Changelog</a>
-      <a href="/privacy-policy">Privacy-policy</a>
-      <a href="/terms-of-use">Terms-of-use</a>
-    </footer>
-    <br>
-  </body>
-</html>
+{% endblock %}

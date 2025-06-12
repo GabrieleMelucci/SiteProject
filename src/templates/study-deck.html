@@ -1,11 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZWCD - View Deck</title>
-  <link rel="stylesheet" href="/static/style.css" />
-</head>
+{% extends "base.html" %}
+
+{% block content %}
 
 <body>
   <div class="nav">
@@ -24,13 +19,4 @@
     <h2 id="deckName"></h2>
   </div>
 
-  <hr class="bottom" />
-  <footer class="site-footer">
-    <a href="/about">About</a>
-    <a href="/changelog">Changelog</a>
-    <a href="/privacy-policy">Privacy-policy</a>
-    <a href="/terms-of-use">Terms-of-use</a>
-  </footer>
-  <br>
-</body>
-</html>
+ {% endblock %}
