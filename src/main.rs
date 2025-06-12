@@ -18,7 +18,7 @@ use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 mod auth;
 mod deck;
 mod login;
-mod model;
+mod user;
 mod parser;
 mod register;
 mod schema;
