@@ -627,3 +627,29 @@ pub async fn get_all_due_words(
 
     Ok(Json(study_words))
 }
+
+#[axum::debug_handler]
+pub async fn get_due_words_count(
+    State(pool): State<DbPool>,
+    session: tower_sessions::Session,
+) -> Result<Json<i32>, (StatusCode, String)> {
+    let user_id = match utils::get_current_user_id(&session).await {
+        Some(id) => id,
+        None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
+    };
+
+    let mut conn = pool.get().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
+
+    let count = srs_reviews::table
+        .filter(srs_reviews::user_id.eq(user_id))
+        .filter(srs_reviews::next_review_date.le(Utc::now().naive_utc()))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })?;
+
+    Ok(Json(count as i32))
+}

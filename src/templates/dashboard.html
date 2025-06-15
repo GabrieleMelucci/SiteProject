@@ -16,6 +16,20 @@
       </form>
     </div>
 
+    <div class="dashboard-section">
+      <h1>Welcome!</h1>
+      <h2>You can now use every functionality that requires an account.</h2>
+      <h2>Create a deck or choose one, and start learning!</h2>
+      
+      <div class="dashboard-actions">
+        <a href="/decks" class="dashboard-button">My Decks</a>
+        <a href="/decks/study" class="dashboard-button">
+          Due Reviews
+          <span id="due-count-badge" class="badge">0</span>
+        </a>
+      </div>
+    </div>
+
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         // Restore language preference
@@ -36,15 +50,28 @@
             e.preventDefault()
           }
         })
-      })
+
+        // Due count fetch
+        (async () => {
+          try {
+            const response = await fetch('/api/due-count');
+            if (!response.ok) throw new Error('Failed to fetch due count');
+            
+            const count = await response.json();
+            const badge = document.getElementById('due-count-badge');
+            
+            if (count > 0) {
+              badge.textContent = count;
+              badge.classList.add('has-due');
+            } else {
+              badge.textContent = '0';
+            }
+          } catch (error) {
+            console.error('Error loading due count:', error);
+            const badge = document.getElementById('due-count-badge');
+            badge.textContent = '?';
+          }
+        })();
+      });
     </script>
-
-    <div class="dashboard-section">
-      <h1>Welcome!</h1>
-      <h2>You can now use every functionality that requires an account.</h2>
-      <h2>Create a deck or choose one, and start learning!</h2>
-      <a href="/decks">My Decks</a>
-      <a href="decks/study">Due Reviews</a>
-    </div>
-
 {% endblock %}

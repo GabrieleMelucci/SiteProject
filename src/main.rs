@@ -66,6 +66,7 @@ async fn main() {
         .route("/add-word", post(deck::add_word_to_deck))
         .route("/{deck_id}/study", get(deck::start_study_session))
         .route("/due", get(deck::get_all_due_words))
+        .route("/due-count", get(deck::get_due_words_count))
         .route("/{deck_id}/words/{word_id}/review", post(deck::record_word_review))
         .route("/{deck_id}", get(deck::view_deck))
         .with_state(pool.clone())
