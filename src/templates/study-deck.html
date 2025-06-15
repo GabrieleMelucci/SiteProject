@@ -2,21 +2,271 @@
 
 {% block content %}
 
-<body>
-  <div class="nav">
-    <h1 class="nav-logo">
-      <a href="/">ZWCD</a>
-      <span style="font-size: 50%">Chinese Language Learning Support</span>
-    </h1>
-    {% if logged_in %}
-      <a class="nav-item" href="/auth/logout">Logout</a>
-    {% else %}
-      <a class="nav-item" href="/auth/login">Login or Sign up</a>
-    {% endif %}
+  <div class="study-container">
+    <div id="study-card" class="study-card">
+      <div class="card-face">
+        <h2 id="study-word"></h2>
+        <div id="study-details" style="display: none;">
+          <p id="study-pinyin"></p>
+          <p id="study-definition"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="study-controls">
+      <button id="show-answer" class="study-button">Show Answer</button>
+      <div id="rating-buttons" style="display: none;">
+        <button class="rating-button" data-rating="1">No clue</button>
+        <button class="rating-button" data-rating="2">Hard</button>
+        <button class="rating-button" data-rating="3">Almost</button>
+        <button class="rating-button" data-rating="4">Okay</button>
+        <button class="rating-button" data-rating="5">Easy</button>
+      </div>
+    </div>
+
+    <div class="study-progress">
+      <span id="progress-text">0/0</span>
+      <div class="progress-bar">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="deck-view">
-    <h2 id="deckName"></h2>
-  </div>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // DOM Elements
+        const studyWordEl = document.getElementById('study-word');
+        const studyPinyinEl = document.getElementById('study-pinyin');
+        const studyDefinitionEl = document.getElementById('study-definition');
+        const studyDetailsEl = document.getElementById('study-details');
+        const showAnswerBtn = document.getElementById('show-answer');
+        const ratingButtons = document.getElementById('rating-buttons');
+        const progressTextEl = document.getElementById('progress-text');
+        const progressFillEl = document.getElementById('progress-fill');
 
- {% endblock %}
+        // Session State
+        let studyWords = [];
+        let currentIndex = 0;
+        let cardsStudied = 0;
+        let totalCards = 0;
+        let isGeneralStudy = false;
+        let isLoading = false;
+
+        // Helper Functions
+        const updateProgress = () => {
+            const progress = totalCards > 0 ? (cardsStudied / totalCards) * 100 : 0;
+            progressTextEl.textContent = `${cardsStudied}/${totalCards}`;
+            progressFillEl.style.width = `${progress}%`;
+        };
+
+        const showNextCard = () => {
+            console.log('Showing next card, currentIndex:', currentIndex);
+            if (currentIndex >= studyWords.length) {
+                console.log('Study session complete');
+                studyWordEl.textContent = 'Study session complete!';
+                studyDetailsEl.style.display = 'none';
+                showAnswerBtn.style.display = 'none';
+                ratingButtons.style.display = 'none';
+                return;
+            }
+
+            const currentWord = studyWords[currentIndex];
+            if (!currentWord?.word) {
+                console.error('Invalid word data at index', currentIndex, currentWord);
+                currentIndex++;
+                showNextCard();
+                return;
+            }
+
+            console.log('Displaying word:', currentWord.word.simplified);
+            studyWordEl.textContent = currentWord.word.simplified || '?';
+            studyPinyinEl.textContent = currentWord.word.pinyin || '';
+            studyDefinitionEl.textContent = currentWord.word.definition || '';
+            studyDetailsEl.style.display = 'none';
+            showAnswerBtn.style.display = 'block';
+            ratingButtons.style.display = 'none';
+        };
+
+        const showAnswer = () => {
+            console.log('Showing answer for card', currentIndex);
+            studyDetailsEl.style.display = 'block';
+            showAnswerBtn.style.display = 'none';
+            ratingButtons.style.display = 'flex';
+        };
+
+        const validateWord = (word) => {
+            try {
+                if (!word || typeof word !== 'object') {
+                    console.error('Word is not an object:', word);
+                    return false;
+                }
+
+                // Validate required word structure
+                const isValid = word.word && 
+                              typeof word.word === 'object' &&
+                              typeof word.word.id === 'number' && 
+                              typeof word.word.deck_id === 'number' &&
+                              typeof word.word.simplified === 'string' &&
+                              typeof word.word.pinyin === 'string' &&
+                              typeof word.word.definition === 'string' &&
+                              typeof word.is_new === 'boolean' &&
+                              (word.last_performance === null || typeof word.last_performance === 'number') &&
+                              (word.next_review === null || typeof word.next_review === 'string');
+
+                if (!isValid) {
+                    console.error('Invalid word structure:', word);
+                }
+
+                return isValid;
+            } catch (e) {
+                console.error('Validation error:', e, word);
+                return false;
+            }
+        };
+
+        const rateCard = async (rating) => {
+            if (isLoading) {
+                console.log('Rate card called while loading');
+                return;
+            }
+            
+            if (rating < 1 || rating > 5) {
+                console.error('Invalid rating value:', rating);
+                return;
+            }
+
+            console.log('Rating card with:', rating);
+            isLoading = true;
+
+            try {
+                const currentWord = studyWords[currentIndex];
+                if (!validateWord(currentWord)) {
+                    throw new Error('Current word is invalid');
+                }
+
+                console.log('Sending review for word:', currentWord.word.id, 'in deck:', currentWord.word.deck_id);
+                const response = await fetch(
+                    `/api/decks/${currentWord.word.deck_id}/words/${currentWord.word.id}/review`, 
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ performance: rating })
+                    }
+                );
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error || 'Review failed');
+                }
+
+                console.log('Review successful');
+                cardsStudied++;
+                currentIndex++;
+                updateProgress();
+                showNextCard();
+            } catch (error) {
+                console.error('Rating error:', error);
+                alert(`Rating failed: ${error.message}`);
+            } finally {
+                isLoading = false;
+            }
+        };
+
+        // Event Listeners
+        showAnswerBtn.addEventListener('click', showAnswer);
+        document.querySelectorAll('.rating-button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const rating = parseInt(e.target.dataset.rating);
+                console.log('Rating button clicked:', rating);
+                if (!isNaN(rating)) rateCard(rating);
+            });
+        });
+
+        // Main Initialization
+        try {
+            console.log('Initializing study session');
+            
+            // Determine study mode
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            isGeneralStudy = pathParts[0] === 'decks' && pathParts[1] === 'study';
+            const deckId = !isGeneralStudy && pathParts[1] ? pathParts[1] : null;
+
+            console.log('Study mode:', isGeneralStudy ? 'general' : 'deck-specific', 'Deck ID:', deckId);
+
+            // Validate deck ID for specific study
+            if (!isGeneralStudy && (!deckId || isNaN(deckId))) {
+                throw new Error('Invalid deck ID');
+            }
+
+            // Fetch words
+            const apiUrl = isGeneralStudy 
+                ? '/api/decks/due' 
+                : `/api/decks/${deckId}/study`;
+
+            console.log('Fetching words from:', apiUrl);
+            const response = await fetch(apiUrl);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API error:', response.status, errorText);
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            // Parse and validate response
+            let data = await response.json();
+            console.log('API response data:', data);
+
+            if (!Array.isArray(data)) {
+                console.error('Invalid data format received:', typeof data, data);
+                throw new Error('Invalid data format - expected array');
+            }
+
+            // Process words
+            studyWords = data
+                .map(word => {
+                    // Ensure all fields are properly initialized
+                    const processedWord = {
+                        word: {
+                            id: word.word?.id ?? -1,
+                            simplified: word.word?.simplified ?? '',
+                            traditional: word.word?.traditional ?? null,
+                            pinyin: word.word?.pinyin ?? '',
+                            definition: word.word?.definition ?? '',
+                            deck_id: word.word?.deck_id ?? -1
+                        },
+                        is_new: word.is_new ?? true,
+                        last_performance: word.last_performance ?? null,
+                        next_review: word.next_review ?? null
+                    };
+                    
+                    console.log('Processed word:', processedWord);
+                    return processedWord;
+                })
+                .filter(validateWord);
+
+            console.log('Valid words count:', studyWords.length);
+            totalCards = studyWords.length;
+
+            if (totalCards === 0) {
+                console.log('No words found');
+                studyWordEl.textContent = isGeneralStudy
+                    ? 'No words due for review!'
+                    : 'No words in this deck';
+                showAnswerBtn.style.display = 'none';
+                return;
+            }
+
+            updateProgress();
+            showNextCard();
+            console.log('Study session initialized successfully');
+        } catch (error) {
+            console.error('Initialization failed:', error);
+            studyWordEl.textContent = 'Failed to load session';
+            alert(`Error: ${error.message}`);
+        }
+    });
+</script>
+
+</body>
+
+{% endblock %}

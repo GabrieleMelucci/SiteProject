@@ -1,7 +1,8 @@
 use axum::{
     Router,
     extract::{Extension, Path},
-    response::{IntoResponse, Redirect},
+    response::{IntoResponse, Redirect, Html},
+    http::StatusCode,
     routing::{delete, get, get_service, post},
 };
 use diesel::{
@@ -22,6 +23,7 @@ mod parser;
 mod register;
 mod schema;
 mod search;
+mod spaced_repetition_system;
 mod user;
 mod utils;
 
@@ -62,6 +64,9 @@ async fn main() {
         .route("/words", get(deck::get_deck_words))
         .route("/create", post(deck::create_deck))
         .route("/add-word", post(deck::add_word_to_deck))
+        .route("/{deck_id}/study", get(deck::start_study_session))
+        .route("/due", get(deck::get_all_due_words))
+        .route("/{deck_id}/words/{word_id}/review", post(deck::record_word_review))
         .route("/{deck_id}", get(deck::view_deck))
         .with_state(pool.clone())
         .layer(session_layer.clone());
@@ -98,6 +103,7 @@ async fn main() {
         // Decks management
         .route("/decks", get(decks_management))
         .route("/deck/{deck_id}", get(deck_view_page))
+        .route("/decks/study", get(due_reviews_page))
         .route("/deck/{deck_id}/study", get(study_page))
         // Auth routes
         .nest("/auth", auth_router)
@@ -222,7 +228,8 @@ async fn deck_view_page(
     utils::render_template(&templates, "view-deck.html", context).into_response()
 }
 
-async fn study_page(
+// Handler for studying a specific deck
+pub async fn study_page(
     Path(deck_id): Path<i32>,
     Extension(templates): Extension<Arc<Tera>>,
     session: tower_sessions::Session,
@@ -230,5 +237,34 @@ async fn study_page(
     let mut context = tera::Context::new();
     context.insert("logged_in", &utils::is_logged_in(&session).await);
     context.insert("deck_id", &deck_id);
-    utils::render_template(&templates, "study-deck.html", context).into_response()
+
+    match templates.render("study-deck.html", &context) {
+        Ok(html) => Html(html).into_response(),
+        Err(e) => {
+            eprintln!("Template rendering error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Template error").into_response()
+        }
+    }
+}
+
+// Handler for due reviews (no deck ID)
+pub async fn due_reviews_page(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
+    let mut context = tera::Context::new();
+    let logged_in = utils::is_logged_in(&session).await;
+    context.insert("logged_in", &logged_in);
+
+    if !logged_in {
+        return Redirect::to("/auth/login").into_response();
+    }
+
+    match templates.render("study-deck.html", &context) {
+        Ok(html) => Html(html).into_response(),
+        Err(e) => {
+            eprintln!("Template rendering error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Template error").into_response()
+        }
+    }
 }

@@ -1,7 +1,8 @@
--- Your SQL goes here
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS userdecks;
-DROP TABLE IF EXISTS deckword;
+DROP TABLE IF EXISTS decks;
+DROP TABLE IF EXISTS words;
+DROP TABLE IF EXISTS deck_words;
+DROP TABLE IF EXISTS srs_reviews;
 
 CREATE TABLE users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,  
@@ -26,24 +27,24 @@ CREATE TABLE words (
     added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP    
 );
 
-create TABLE deck_words(
+CREATE TABLE deck_words (
     deck_id INTEGER NOT NULL, 
     word_id INTEGER NOT NULL,
     
-    PRIMARY KEY (word_id, deck_id),
+    PRIMARY KEY (deck_id, word_id),
     FOREIGN KEY (deck_id) REFERENCES decks(deck_id) ON DELETE CASCADE, 
     FOREIGN KEY (word_id) REFERENCES words(word_id) ON DELETE CASCADE
- )
+);
 
- CREATE TABLE srs_reviews (
+CREATE TABLE srs_reviews (
     review_id INTEGER PRIMARY KEY AUTOINCREMENT,
     word_id INTEGER NOT NULL,
     deck_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
-    review_date TIMESTAMP NOT NULL,
+    review_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     next_review_date TIMESTAMP NOT NULL,
-    ease_factor REAL NOT NULL,
-    interval INTEGER NOT NULL,
+    ease_factor REAL NOT NULL DEFAULT 2.5,
+    interval INTEGER NOT NULL DEFAULT 1,
     performance INTEGER NOT NULL,
     
     FOREIGN KEY (word_id) REFERENCES words(word_id) ON DELETE CASCADE,

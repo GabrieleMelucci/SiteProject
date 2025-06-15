@@ -11,7 +11,7 @@ pub struct DictEntry {
 
 pub fn parse_cedict() -> Vec<DictEntry> {
 
-    let content = fs::read_to_string("src/cedict_ts.u8")
+    let content = fs::read_to_string("src/data/cedict_ts.u8")
         .expect("Errore nella lettura del file cedict_ts.u8");
 
     let mut entries = Vec::new();
