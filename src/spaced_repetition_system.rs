@@ -2,9 +2,7 @@
 use chrono::{Duration, NaiveDateTime, Utc};
 use diesel::prelude::*;
 
-use crate::{
-    schema::srs_reviews
-};
+use crate::schema::srs_reviews;
 
 /// Represents a review record in the SRS system
 #[derive(Queryable, Insertable, Debug)]
@@ -45,11 +43,7 @@ impl<'a> SrsEngine<'a> {
         // Calculate new SRS parameters based on performance
         let (interval, ease_factor) = match last_review {
             Some(review) => {
-                self.calculate_srs_parameters(
-                    performance,
-                    review.interval,
-                    review.ease_factor,
-                )
+                self.calculate_srs_parameters(performance, review.interval, review.ease_factor)
             }
             None => self.initial_srs_parameters(performance),
         };
@@ -58,7 +52,7 @@ impl<'a> SrsEngine<'a> {
         let now = Utc::now().naive_utc();
         let next_review_date = now + Duration::days(interval as i64);
 
-        // Insert the new review record
+        // Use upsert (update or insert) operation
         diesel::insert_into(srs_reviews::table)
             .values((
                 srs_reviews::word_id.eq(word_id),
@@ -69,6 +63,16 @@ impl<'a> SrsEngine<'a> {
                 srs_reviews::ease_factor.eq(ease_factor),
                 srs_reviews::interval.eq(interval),
                 srs_reviews::performance.eq(performance),
+            ))
+            .on_conflict((srs_reviews::user_id, srs_reviews::word_id))
+            .do_update()
+            .set((
+                srs_reviews::review_date.eq(now),
+                srs_reviews::next_review_date.eq(next_review_date),
+                srs_reviews::ease_factor.eq(ease_factor),
+                srs_reviews::interval.eq(interval),
+                srs_reviews::performance.eq(performance),
+                srs_reviews::deck_id.eq(deck_id), 
             ))
             .execute(self.conn)?;
 
@@ -95,14 +99,15 @@ impl<'a> SrsEngine<'a> {
     fn initial_srs_parameters(&self, performance: i32) -> (i32, f32) {
         // Initial ease factor
         let ease_factor = 2.5;
-        
+
         // Initial interval based on performance
         let interval = match performance {
-            1 => 1,    // Again - repeat next day
-            2 => 1,    // Hard - repeat next day
-            3 => 3,    // Good - repeat in 3 days
-            4 => 5,    // Easy - repeat in 5 days
-            _ => 1,    // Default to 1 day for invalid values
+            1 => 1, // Again - repeat next day
+            2 => 1, // Hard - repeat next day
+            3 => 3, // Good - repeat in 3 days
+            4 => 5, // Easy - repeat in 5 days
+            5 => 7, // Very Easy - repeat in 7 days
+            _ => 1, // Default to 1 day for invalid values
         };
 
         (interval, ease_factor)
@@ -130,10 +135,9 @@ impl<'a> SrsEngine<'a> {
                 // Good/Easy - multiply interval by ease factor
                 (previous_interval as f32 * ease_factor).round() as i32
             }
-            _ => previous_interval, // Shouldn't happen as we validate earlier
+            _ => previous_interval,
         };
 
         (interval, ease_factor)
     }
 }
-

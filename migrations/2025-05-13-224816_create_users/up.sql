@@ -1,8 +1,8 @@
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS decks;
-DROP TABLE IF EXISTS words;
-DROP TABLE IF EXISTS deck_words;
 DROP TABLE IF EXISTS srs_reviews;
+DROP TABLE IF EXISTS deck_words;
+DROP TABLE IF EXISTS words;
+DROP TABLE IF EXISTS decks;
+DROP TABLE IF EXISTS users;
 
 CREATE TABLE users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,  
@@ -23,8 +23,10 @@ CREATE TABLE words (
     simplified TEXT NOT NULL,        
     traditional TEXT,               
     pinyin TEXT NOT NULL,            
-    definition TEXT NOT NULL, 
-    added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP    
+    definition TEXT NOT NULL,
+    added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE (traditional, pinyin, definition)
 );
 
 CREATE TABLE deck_words (
@@ -49,7 +51,9 @@ CREATE TABLE srs_reviews (
     
     FOREIGN KEY (word_id) REFERENCES words(word_id) ON DELETE CASCADE,
     FOREIGN KEY (deck_id) REFERENCES decks(deck_id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    
+    UNIQUE (user_id, word_id)
 );
 
 CREATE INDEX idx_srs_reviews_user ON srs_reviews(user_id);

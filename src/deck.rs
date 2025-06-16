@@ -205,15 +205,20 @@ pub async fn add_word_to_deck(
     }
 
     // Add the word to the deck
-    add_word_to_deck_internal(&mut conn, payload.deck_id, payload.word_data)
-        .map_err(|e| {
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
-        })?;
-
-    Ok(Json(ApiResponse {
-        success: true,
-        message: "Word added to deck successfully".to_string(),
-    }))
+    match add_word_to_deck_internal(&mut conn, payload.deck_id, payload.word_data) {
+        Ok(_) => Ok(Json(ApiResponse {
+            success: true,
+            message: "Word added to deck successfully".to_string(),
+        })),
+        Err(diesel::result::Error::DatabaseError(
+            diesel::result::DatabaseErrorKind::UniqueViolation,
+            _,
+        )) => Err((StatusCode::CONFLICT, "Word already exists in this deck".to_string())),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Database error: {}", e),
+        )),
+    }
 }
 
 /// Internal function to handle word addition to a deck
@@ -223,7 +228,7 @@ fn add_word_to_deck_internal(
     deck_id: i32,
     word_data: serde_json::Value,
 ) -> Result<i32, diesel::result::Error> {
-    // Extract and validate required word fields
+    // Extract word data with proper error handling
     let simplified = word_data.get("simplified")
         .and_then(|v| v.as_str())
         .ok_or_else(|| diesel::result::Error::DeserializationError(
@@ -240,7 +245,6 @@ fn add_word_to_deck_internal(
             "Missing pinyin field".into()
         ))?;
     
-    // Handle definitions which might be an array or a single string
     let definition = match word_data.get("definitions") {
         Some(serde_json::Value::Array(arr)) => {
             arr.iter()
@@ -254,28 +258,53 @@ fn add_word_to_deck_internal(
         )),
     };
 
-    // Insert the new word (ID will be auto-generated)
-    diesel::insert_into(words::table)
-        .values((
-            words::simplified.eq(simplified),
-            words::traditional.eq(traditional),
-            words::pinyin.eq(pinyin),
-            words::definition.eq(definition),
-        ))
-        .execute(conn)?;
+    // First try to find existing word
+    let existing_word = words::table
+        .filter(words::simplified.eq(simplified))
+        .filter(words::pinyin.eq(pinyin))
+        .filter(words::definition.eq(&definition))
+        .select(words::word_id)
+        .first::<i32>(conn)
+        .optional()?;
 
-    // Get the last inserted row id (SQLite specific)
-    let word_id = diesel::select(diesel::dsl::sql::<Integer>("last_insert_rowid()"))
-        .get_result::<i32>(conn)?;
+    let word_id = match existing_word {
+        Some(id) => id, // Use existing word
+        None => {
+            // Insert new word
+            diesel::insert_into(words::table)
+                .values((
+                    words::simplified.eq(simplified),
+                    words::traditional.eq(traditional),
+                    words::pinyin.eq(pinyin),
+                    words::definition.eq(definition),
+                ))
+                .execute(conn)?;
+            
+            diesel::select(diesel::dsl::sql::<Integer>("last_insert_rowid()"))
+                .get_result::<i32>(conn)?
+        }
+    };
 
-    // Add to the deck_words junction table
+    // Check if word already exists in deck
+    let word_in_deck: i64 = deck_words::table
+        .filter(deck_words::deck_id.eq(deck_id))
+        .filter(deck_words::word_id.eq(word_id))
+        .count()
+        .get_result(conn)?;
+
+    if word_in_deck > 0 {
+        return Err(diesel::result::Error::DatabaseError(
+            diesel::result::DatabaseErrorKind::UniqueViolation,
+            Box::new("Word already exists in this deck".to_string())
+        ));
+    }
+
+    // Add to deck_words
     diesel::insert_into(deck_words::table)
         .values((
             deck_words::deck_id.eq(deck_id),
             deck_words::word_id.eq(word_id),
         ))
-        .on_conflict((deck_words::deck_id, deck_words::word_id))
-        .do_nothing()
         .execute(conn)?;
 
     Ok(word_id)
@@ -618,7 +647,7 @@ pub async fn get_all_due_words(
                     definition,
                     deck_id,
                 },
-                is_new: false, // Since these are from srs_reviews, they're not new
+                is_new: false, 
                 last_performance: Some(performance),
                 next_review: Some(next_review_date),
             }
