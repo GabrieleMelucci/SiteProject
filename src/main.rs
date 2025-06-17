@@ -102,6 +102,8 @@ async fn main() {
         .route("/search", get(search::search_page))
         // Dashboard
         .route("/dashboard", get(dashboard))
+        // Public Decks management
+        .route("/public-decks", get(public_decks_management))
         // Decks management
         .route("/decks", get(decks_management))
         .route("/deck/{deck_id}", get(deck_view_page))
@@ -158,6 +160,23 @@ async fn dashboard(
     utils::render_template(&templates, "dashboard.html", context).into_response()
 }
 
+async fn public_decks_management(
+    Extension(templates): Extension<Arc<Tera>>,
+    session: tower_sessions::Session,
+) -> impl IntoResponse {
+    let mut context = tera::Context::new();
+    let logged_in = utils::is_logged_in(&session).await;
+    context.insert("logged_in", &logged_in);
+
+    if logged_in {
+        if let Some(user_id) = utils::get_current_user_id(&session).await {
+            context.insert("user_id", &user_id);
+        }
+    }
+
+    utils::render_template(&templates, "public-decks-list.html", context).into_response()
+}
+
 async fn decks_management(
     Extension(templates): Extension<Arc<Tera>>,
     session: tower_sessions::Session,
@@ -172,7 +191,7 @@ async fn decks_management(
         }
     }
 
-    utils::render_template(&templates, "decks_management.html", context).into_response()
+    utils::render_template(&templates, "decks-management.html", context).into_response()
 }
 
 async fn about(
