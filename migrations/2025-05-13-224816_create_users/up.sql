@@ -14,8 +14,19 @@ CREATE TABLE decks (
     deck_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,  
     user_id INTEGER NOT NULL,
     deck_name TEXT NOT NULL,
+    privacy_value BOOLEAN NOT NULL DEFAULT TRUE,
+    user_made BOOLEAN NOT NULL DEFAULT TRUE,
+    duplicated_check BOOLEAN NOT NULL DEFAULT FALSE,
+    like_count INTEGER NOT NULL DEFAULT 0,
     
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE deck_tags (
+    deck_id INTEGER NOT NULL,
+    tag TEXT NOT NULL,
+    PRIMARY KEY (deck_id, tag),
+    FOREIGN KEY (deck_id) REFERENCES decks(deck_id) ON DELETE CASCADE
 );
 
 CREATE TABLE words (
