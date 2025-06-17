@@ -359,6 +359,53 @@ pub async fn delete_deck(
     }))
 }
 
+//Deletes a word from a deck
+pub async fn delete_word_from_deck(
+    State(pool): State<DbPool>,
+    session: tower_sessions::Session,
+    Path((deck_id, word_id)): Path<(i32, i32)>,
+) -> Result<Json<ApiResponse>, (StatusCode, String)> {
+    // Verify user is logged in
+    let user_id = match utils::get_current_user_id(&session).await {
+        Some(id) => id,
+        None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
+    };
+
+    let mut conn = pool.get().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
+
+    // Verify the deck exists and belongs to this user
+    let deck_exists = decks::table
+        .filter(decks::deck_id.eq(deck_id))
+        .filter(decks::user_id.eq(user_id))
+        .count()
+        .get_result::<i64>(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })? > 0;
+
+    if !deck_exists {
+        return Err((StatusCode::NOT_FOUND, "Deck not found".to_string()));
+    }
+
+    // Delete only the word-deck connection
+    diesel::delete(
+        deck_words::table
+            .filter(deck_words::deck_id.eq(deck_id))
+            .filter(deck_words::word_id.eq(word_id)),
+    )
+    .execute(&mut conn)
+    .map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
+
+    Ok(Json(ApiResponse {
+        success: true,
+        message: "Word removed from deck successfully".to_string(),
+    }))
+}
+
 /// Views a deck with all its words
 pub async fn view_deck(
     Path(deck_id): Path<i32>,

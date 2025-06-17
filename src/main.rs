@@ -61,6 +61,7 @@ async fn main() {
     let deck_api_router = Router::new()
         .route("/", get(deck::list_decks))
         .route("/{deck_id}", delete(deck::delete_deck))
+        .route("/{deck_id}/{word_id}", delete(deck::delete_word_from_deck))
         .route("/words", get(deck::get_deck_words))
         .route("/create", post(deck::create_deck))
         .route("/add-word", post(deck::add_word_to_deck))
