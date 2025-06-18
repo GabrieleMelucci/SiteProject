@@ -1,6 +1,13 @@
 ﻿// @generated automatically by Diesel CLI.
 
 diesel::table! {
+    deck_tags (deck_id, tag) {
+        deck_id -> Integer,
+        tag -> Text,
+    }
+}
+
+diesel::table! {
     deck_words (deck_id, word_id) {
         deck_id -> Integer,
         word_id -> Integer,
@@ -12,6 +19,10 @@ diesel::table! {
         deck_id -> Integer,
         user_id -> Integer,
         deck_name -> Text,
+        privacy_value -> Bool,
+        user_made -> Bool,
+        duplicated_check -> Bool,
+        like_count -> Integer,
     }
 }
 
@@ -48,6 +59,7 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(deck_tags -> decks (deck_id));
 diesel::joinable!(deck_words -> decks (deck_id));
 diesel::joinable!(deck_words -> words (word_id));
 diesel::joinable!(decks -> users (user_id));
@@ -56,6 +68,7 @@ diesel::joinable!(srs_reviews -> users (user_id));
 diesel::joinable!(srs_reviews -> words (word_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    deck_tags,
     deck_words,
     decks,
     srs_reviews,

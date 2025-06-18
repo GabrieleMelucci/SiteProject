@@ -350,6 +350,25 @@ footer a:hover::after {
     background-color: #C1423F;
 }
 
+.privacy-toggle {
+    display: inline-block;
+    margin: 0 10px;
+}
+
+.privacy-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.deck-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
 
@@ -537,8 +556,7 @@ footer a:hover::after {
 .view-deck-btn,
 .study-deck-btn,
 .delete-deck-btn,
-.delete-word-btn
-.btn {
+.delete-word-btn .btn {
     background-color: #C1423F;
     color: white;
     border: none;
@@ -553,8 +571,7 @@ footer a:hover::after {
 .view-deck-btn:hover,
 .study-deck-btn:hover,
 .delete-deck-btn:hover,
-.delete-word-btn:hover
-.btn:hover {
+.delete-word-btn:hover .btn:hover {
     background-color: #702121;
 }
 

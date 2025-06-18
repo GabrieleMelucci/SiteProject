@@ -46,6 +46,7 @@ pub struct DeckId {
 pub struct Deck {
     pub id: i32,          // Deck ID
     pub name: String,     // Deck name
+    pub privacy_value: bool, // Privacy setting
 }
 
 /// Request payload for creating a new deck
@@ -53,6 +54,8 @@ pub struct Deck {
 pub struct CreateDeckRequest {
     pub name: String,                // Name for the new deck
     pub word_data: Option<serde_json::Value>, // Optional initial word data
+    #[serde(default)]
+    pub privacy_value: bool, 
 }
 
 /// Request payload for adding a word to a deck
@@ -94,6 +97,11 @@ pub struct ReviewRequest {
     pub performance: i32,
 }
 
+#[derive(Deserialize)]
+pub struct UpdatePrivacyRequest {
+    pub privacy_value: bool,
+}
+
 /// Lists all decks for the current user
 pub async fn list_decks(
     State(pool): State<DbPool>,
@@ -113,13 +121,13 @@ pub async fn list_decks(
     // Query all decks belonging to this user
     let decks = decks::table
         .filter(decks::user_id.eq(user_id))
-        .select((decks::deck_id, decks::deck_name))
-        .load::<(i32, String)>(&mut conn)
+        .select((decks::deck_id, decks::deck_name, decks::privacy_value))
+        .load::<(i32, String, bool)>(&mut conn)
         .map_err(|e| {
             (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
         })?
         .into_iter()
-        .map(|(id, name)| Deck { id, name })
+        .map(|(id, name, privacy_value)| Deck { id, name, privacy_value })
         .collect();
 
     Ok(Json(decks))
@@ -148,6 +156,7 @@ pub async fn create_deck(
             .values((
                 decks::deck_name.eq(&payload.name),
                 decks::user_id.eq(user_id),
+                decks::privacy_value.eq(payload.privacy_value),
             ))
             .execute(conn)?;
 
@@ -728,4 +737,47 @@ pub async fn get_due_words_count(
         })?;
 
     Ok(Json(count as i32))
+}
+
+pub async fn update_deck_privacy(
+    Path(deck_id): Path<i32>,
+    State(pool): State<DbPool>,
+    session: tower_sessions::Session,
+    Json(payload): Json<UpdatePrivacyRequest>,
+) -> Result<Json<ApiResponse>, (StatusCode, String)> {
+    // Verify user is logged in
+    let user_id = match utils::get_current_user_id(&session).await {
+        Some(id) => id,
+        None => return Err((StatusCode::UNAUTHORIZED, "Not logged in".to_string())),
+    };
+
+    let mut conn = pool.get().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
+
+    // Verify the deck exists and belongs to this user
+    let deck_owner: i32 = decks::table
+        .filter(decks::deck_id.eq(deck_id))
+        .select(decks::user_id)
+        .first(&mut conn)
+        .map_err(|_| {
+            (StatusCode::FORBIDDEN, "Deck not found or access denied".to_string())
+        })?;
+
+    if deck_owner != user_id {
+        return Err((StatusCode::FORBIDDEN, "Access denied".to_string()));
+    }
+
+    // Update the privacy setting
+    diesel::update(decks::table.filter(decks::deck_id.eq(deck_id)))
+        .set(decks::privacy_value.eq(payload.privacy_value))
+        .execute(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })?;
+
+    Ok(Json(ApiResponse {
+        success: true,
+        message: "Privacy setting updated successfully".to_string(),
+    }))
 }

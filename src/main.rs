@@ -3,7 +3,7 @@ use axum::{
     extract::{Extension, Path},
     response::{IntoResponse, Redirect, Html},
     http::StatusCode,
-    routing::{delete, get, get_service, post},
+    routing::{delete, get, get_service, post, put},
 };
 use diesel::{
     SqliteConnection,
@@ -65,6 +65,7 @@ async fn main() {
         .route("/words", get(deck::get_deck_words))
         .route("/create", post(deck::create_deck))
         .route("/add-word", post(deck::add_word_to_deck))
+        .route("/{deck_id}/privacy", put(deck::update_deck_privacy))
         .route("/{deck_id}/study", get(deck::start_study_session))
         .route("/due", get(deck::get_all_due_words))
         .route("/due-count", get(deck::get_due_words_count))
