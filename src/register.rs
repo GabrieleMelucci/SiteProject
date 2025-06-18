@@ -11,10 +11,11 @@ use tera::{Tera, Context};
 use validator::Validate;
 
 use crate::{
-    user::{NewUser, User},
+    auth::set_user_session,
+    data::models::{NewUser, User},
     schema::users::dsl::{email, users},
     DbPool,
-    auth::{RegisterError, RegisterForm, set_user_session},
+    data::models::{RegisterError, RegisterForm},
     utils::render_template,
 };
 

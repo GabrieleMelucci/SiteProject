@@ -4,30 +4,18 @@ use axum::{
     Extension,
     Json,
 };
-use serde::{Deserialize, Serialize};
+use crate::data::models::{SearchParams, SearchResult};
 use std::sync::Arc;
 use regex::Regex;
 use lazy_static::lazy_static;
 use unidecode::unidecode;
 use tera::Context;
 
-use crate::{parser::DictEntry, utils::{self, render_template}};
+use crate::{data::models::DictEntry, utils::{self, render_template}};
 
 lazy_static! {
     static ref NORMALIZE_RE: Regex = Regex::new(r"[^a-zA-Z\u4e00-\u9fff]").unwrap();
     static ref PUNCTUATION_RE: Regex = Regex::new(r"[.,;:!?]").unwrap();
-}
-
-#[derive(Debug, Deserialize)]
-pub struct SearchParams {
-    pub q: String,
-    pub lang: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct SearchResult {
-    pub query: String,
-    pub results: Vec<DictEntry>,
 }
 
 // Handler for HTML page

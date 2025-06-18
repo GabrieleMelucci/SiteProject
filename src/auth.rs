@@ -1,48 +1,11 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use bcrypt::BcryptError;
+use crate::data::models::{LoginError, RegisterError, AuthError};
 use diesel::result::Error as DieselError;
-use serde::Deserialize;
-use serde_json::{json, Error as JsonError};
-use thiserror::Error;
 use tower_sessions::session::Error as SessionError;
-use validator::{Validate, ValidationErrors};
-
-// Login specific errors
-#[derive(Error, Debug)]
-pub enum LoginError {
-    #[error("Invalid credentials")]
-    InvalidCredentials,
-    #[error("Database error")]
-    DatabaseError(DieselError),
-    #[error("Hashing error")]
-    HashingError(BcryptError),
-    #[error("Session error: {0}")]
-    SessionError(String),
-}
-
-// Registration specific errors
-#[derive(Error, Debug)]
-pub enum RegisterError {
-    #[error("Email already registered")]
-    EmailTaken,
-    #[error("Password too weak")]
-    ValidationError(String),
-    #[error("Database error")]
-    DatabaseError(#[from] DieselError),
-    #[error("Hashing error")]
-    HashingError(BcryptError),
-    #[error("Session error: {0}")]
-    SessionError(String),
-}
-
-#[derive(Error, Debug)]
-pub enum AuthError {
-    #[error(transparent)]
-    Login(#[from] LoginError),
-    #[error(transparent)]
-    Register(#[from] RegisterError),
-}
+use validator::ValidationErrors;
+use serde_json::{json, Error as JsonError};
 
 impl IntoResponse for LoginError {
     fn into_response(self) -> Response {
@@ -149,21 +112,6 @@ impl From<JsonError> for RegisterError {
     fn from(err: JsonError) -> Self {
         RegisterError::SessionError(err.to_string())
     }
-}
-
-// Form structs
-#[derive(Debug, Deserialize, Validate)]
-pub struct RegisterForm {
-    #[validate(email)]
-    pub email: String,
-    #[validate(length(min = 8, message = "Password must be at least 8 characters"))]
-    pub password: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct LoginForm {
-    pub email: String,
-    pub password: String,
 }
 
 // Utility functions

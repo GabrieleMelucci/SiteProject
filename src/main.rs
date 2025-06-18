@@ -5,6 +5,7 @@ use axum::{
     http::StatusCode,
     routing::{delete, get, get_service, post, put},
 };
+use data::schema; 
 use diesel::{
     SqliteConnection,
     r2d2::{ConnectionManager, Pool},
@@ -21,10 +22,9 @@ mod deck;
 mod login;
 mod parser;
 mod register;
-mod schema;
+mod data;
 mod search;
 mod spaced_repetition_system;
-mod user;
 mod utils;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
@@ -231,10 +231,10 @@ async fn terms_of_use(
     utils::render_template(&templates, "terms-of-use.html", context).into_response()
 }
 
-async fn handle_logout(session: tower_sessions::Session) -> Result<Redirect, auth::LoginError> {
+async fn handle_logout(session: tower_sessions::Session) -> Result<Redirect, data::models::LoginError> {
     session.delete().await.map_err(|e| {
         log::error!("Failed to delete session: {}", e);
-        auth::LoginError::SessionError("Failed to logout".into())
+        data::models::LoginError::SessionError("Failed to logout".into())
     })?;
     Ok(Redirect::to("/"))
 }
