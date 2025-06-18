@@ -3,11 +3,15 @@
 {% block content %}
 
   <div class="deck-view">
+
     <h2 id="deckName"></h2>
     <div id="deckWords"></div>
-    <br><br>
-    <a href="/decks" class="btn">Back to all decks</a>
+    {% if logged_in %}
+    <p style="padding: 1rem;">
     <br>
+    <a href="/decks" class="btn">Back to all decks</a>
+    </p>
+    {% endif %}
   </div>
 
   <script>
@@ -87,7 +91,7 @@
             document.getElementById('deckWords').innerHTML = `
               <div class="error">
                 <p>Error loading deck: ${error.message}</p>
-                <button onclick="fetchWords()">Retry</button>
+                <button onclick="fetchWords()" class="btn">Retry</button>
               </div>
             `;
           });

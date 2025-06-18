@@ -556,7 +556,8 @@ footer a:hover::after {
 .view-deck-btn,
 .study-deck-btn,
 .delete-deck-btn,
-.delete-word-btn .btn {
+.delete-word-btn,
+.btn {
     background-color: #C1423F;
     color: white;
     border: none;
@@ -571,7 +572,8 @@ footer a:hover::after {
 .view-deck-btn:hover,
 .study-deck-btn:hover,
 .delete-deck-btn:hover,
-.delete-word-btn:hover .btn:hover {
+.delete-word-btn:hover,
+.btn:hover {
     background-color: #702121;
 }
 
