@@ -13,6 +13,7 @@ use diesel::{
     SqliteConnection,
     r2d2::{ConnectionManager, Pool},
 };
+use handlers::auth::*;
 use std::sync::Arc;
 use tera::Tera;
 use time::Duration;
@@ -23,8 +24,7 @@ use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 mod data;
 mod deck;
 mod features;
-mod login;
-mod register;
+mod handlers;
 mod search;
 mod utils;
 

@@ -4,19 +4,15 @@ use axum::{
     routing::get,
     Router,
 };
-use bcrypt::{hash, DEFAULT_COST};
-use diesel::prelude::*;
 use std::sync::Arc;
 use tera::{Tera, Context};
 use validator::Validate;
 
 use crate::{
-    utils::set_user_session,
-    data::models::{NewUser, User},
-    schema::users::dsl::{email, users},
     DbPool,
-    data::models::{RegisterError, RegisterForm},
-    utils::render_template,
+    utils::{set_user_session, render_template},
+    data::repositories::UserRepository,
+    data::models::{RegisterError, RegisterForm}
 };
 
 pub async fn show_register_form(
@@ -33,57 +29,25 @@ pub async fn handle_register(
     session: tower_sessions::Session,
     Form(form): Form<RegisterForm>,
 ) -> Result<Redirect, RegisterError> {
-    // Validation with validator
     form.validate().map_err(RegisterError::from)?;
 
-    let mut conn = pool.get().map_err(|e| {
-        log::error!("Failed to get DB connection: {}", e);
-        RegisterError::SessionError("Failed to get DB connection".into())
-    })?;
-
-    // Checks if email is already taken
-    let existing_user = users
-        .filter(email.eq(&form.email))
-        .first::<User>(&mut conn)
-        .optional()
+    let mut conn = pool.get()
         .map_err(|e| {
-            log::error!("Database error during registration: {}", e);
-            RegisterError::DatabaseError(e)
+            log::error!("Failed to get DB connection: {}", e);
+            RegisterError::SessionError("Failed to get DB connection".into())
         })?;
 
-    if existing_user.is_some() {
+    if UserRepository::email_exists(&mut conn, &form.email)? {
         log::warn!("Registration attempt with existing email: {}", form.email);
         return Err(RegisterError::EmailTaken);
     }
 
-    // Password hashing
-    let hashed_password = hash(&form.password, DEFAULT_COST).map_err(|e| {
-        log::error!("Password hashing failed: {}", e);
-        RegisterError::HashingError(e)
-    })?;
-
-    // Create the new user
-    diesel::insert_into(users)
-        .values(&NewUser {
-            email: &form.email,
-            password: &hashed_password,
-        })
-        .execute(&mut conn)
+    let user = UserRepository::create_user(&mut conn, &form.email, &form.password)
         .map_err(|e| {
-            log::error!("Failed to create user: {}", e);
+            log::error!("User creation failed: {}", e);
             RegisterError::DatabaseError(e)
         })?;
 
-    // Fetch the new user
-    let user = users
-        .filter(email.eq(&form.email))
-        .first::<User>(&mut conn)
-        .map_err(|e| {
-            log::error!("Failed to fetch new user: {}", e);
-            RegisterError::DatabaseError(e)
-        })?;
-
-    // Set session
     set_user_session(&session, user.user_id, &user.email)
         .await
         .map_err(|e| {

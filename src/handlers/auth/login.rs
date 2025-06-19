@@ -4,18 +4,16 @@ use axum::{
     routing::get,
     Router,
 };
-use bcrypt::verify;
-use diesel::prelude::*;
 use std::sync::Arc;
 use tera::{Tera, Context};
 use log;
 
 use crate::{
-    data::models::{LoginError, LoginForm, User},
     DbPool,
-    schema::users::dsl::{users, email},  
-    utils::{set_user_session, render_template}
+    utils::{set_user_session, render_template},
+    data::repositories::UserRepository
 };
+use crate::data::models::{LoginError, LoginForm};
 
 pub async fn show_login_form(
     State((_pool, tera)): State<(DbPool, Arc<Tera>)>
@@ -31,38 +29,38 @@ pub async fn handle_login(
     session: tower_sessions::Session,
     Form(form): Form<LoginForm>,
 ) -> Result<Redirect, LoginError> {
-    let mut conn = pool.get().map_err(|e| {
-        log::error!("Failed to get DB connection: {}", e);
-        LoginError::SessionError("Failed to get DB connection".into())
-    })?;
+    let mut conn = pool.get()
+        .map_err(|e| {
+            log::error!("Failed to get DB connection: {}", e);
+            LoginError::SessionError("Failed to get DB connection".into())
+        })?;
     
-    let user = users
-        .filter(email.eq(&form.email))
-        .first::<User>(&mut conn)
-        .optional()
+    let user = UserRepository::find_by_email(&mut conn, &form.email)
         .map_err(|e| {
             log::error!("Database error during login: {}", e);
             LoginError::DatabaseError(e)
         })?;
 
-    if let Some(user) = user {
-        match verify(&form.password, &user.password) {
-            Ok(true) => {
+    match user {
+        Some(user) => {
+            let is_valid = UserRepository::verify_password(&user.password, &form.password)
+                .map_err(|e| {
+                    log::error!("Password verification failed: {}", e);
+                    LoginError::HashingError(e)
+                })?;
+            
+            if is_valid {
                 set_user_session(&session, user.user_id, &user.email).await?;
                 Ok(Redirect::to("/dashboard"))
-            },
-            Ok(false) => {
+            } else {
                 log::warn!("Invalid password for user: {}", form.email);
                 Err(LoginError::InvalidCredentials)
-            },
-            Err(e) => {
-                log::error!("Password verification failed: {}", e);
-                Err(LoginError::HashingError(e))
             }
+        },
+        None => {
+            log::warn!("User not found: {}", form.email);
+            Err(LoginError::InvalidCredentials)
         }
-    } else {
-        log::warn!("User not found: {}", form.email);
-        Err(LoginError::InvalidCredentials)
     }
 }
 
