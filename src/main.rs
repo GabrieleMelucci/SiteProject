@@ -5,15 +5,12 @@ use axum::{
     http::StatusCode,
     routing::{delete, get, get_service, post, put},
 };
-use data::{
-    schema,
-    parsing
-};
+use data::*;
 use diesel::{
     SqliteConnection,
     r2d2::{ConnectionManager, Pool},
 };
-use handlers::auth::*;
+use handlers::{auth::*, search::*};
 use std::sync::Arc;
 use tera::Tera;
 use time::Duration;
@@ -25,7 +22,6 @@ mod data;
 mod deck;
 mod features;
 mod handlers;
-mod search;
 mod utils;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
