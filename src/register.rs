@@ -11,7 +11,7 @@ use tera::{Tera, Context};
 use validator::Validate;
 
 use crate::{
-    auth::set_user_session,
+    utils::set_user_session,
     data::models::{NewUser, User},
     schema::users::dsl::{email, users},
     DbPool,

@@ -11,12 +11,10 @@ use tera::{Tera, Context};
 use log;
 
 use crate::{
-    auth::set_user_session,
-    schema::users::dsl::{users, email},
-    data::models::User,
+    data::models::{LoginError, LoginForm, User},
     DbPool,
-    data::models::{LoginError, LoginForm},  
-    utils::render_template
+    schema::users::dsl::{users, email},  
+    utils::{set_user_session, render_template}
 };
 
 pub async fn show_login_form(

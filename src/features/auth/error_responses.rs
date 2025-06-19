@@ -1,11 +1,7 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use bcrypt::BcryptError;
+use serde_json::json;
 use crate::data::models::{LoginError, RegisterError, AuthError};
-use diesel::result::Error as DieselError;
-use tower_sessions::session::Error as SessionError;
-use validator::ValidationErrors;
-use serde_json::{json, Error as JsonError};
 
 impl IntoResponse for LoginError {
     fn into_response(self) -> Response {
@@ -69,59 +65,4 @@ impl IntoResponse for AuthError {
             AuthError::Register(e) => e.into_response(),
         }
     }
-}
-
-impl From<DieselError> for LoginError {
-    fn from(err: DieselError) -> Self {
-        LoginError::DatabaseError(err)
-    }
-}
-
-impl From<BcryptError> for LoginError {
-    fn from(err: BcryptError) -> Self {
-        LoginError::HashingError(err)
-    }
-}
-
-impl From<SessionError> for LoginError {
-    fn from(err: SessionError) -> Self {
-        LoginError::SessionError(err.to_string())
-    }
-}
-
-
-impl From<BcryptError> for RegisterError {
-    fn from(err: BcryptError) -> Self {
-        RegisterError::HashingError(err)
-    }
-}
-
-impl From<SessionError> for RegisterError {
-    fn from(err: SessionError) -> Self {
-        RegisterError::SessionError(err.to_string())
-    }
-}
-
-impl From<ValidationErrors> for RegisterError {
-    fn from(err: ValidationErrors) -> Self {
-        RegisterError::ValidationError(err.to_string())
-    }
-}
-
-impl From<JsonError> for RegisterError {
-    fn from(err: JsonError) -> Self {
-        RegisterError::SessionError(err.to_string())
-    }
-}
-
-// Utility functions
-pub async fn set_user_session(
-    session: &tower_sessions::Session,
-    user_id: i32,
-    email: &str,
-) -> Result<(), LoginError> {
-    session.insert("logged_in", true).await?;
-    session.insert("user_id", user_id).await?;
-    session.insert("user_email", email).await?;
-    Ok(())
 }

@@ -11,7 +11,7 @@ use crate::{
     data::schema::{deck_words, decks, words, srs_reviews},
     data::models::{Deck, DeckWithWords, DeckWord, DeckId, CreateDeckRequest, AddWordRequest, ApiResponse, Word, StudyWord, ReviewRequest, UpdatePrivacyRequest},
     utils,
-    spaced_repetition_system::SrsEngine 
+    features::srs::SrsEngine 
 };
 
 /// Lists all decks for the current user

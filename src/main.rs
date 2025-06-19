@@ -5,7 +5,10 @@ use axum::{
     http::StatusCode,
     routing::{delete, get, get_service, post, put},
 };
-use data::schema; 
+use data::{
+    schema,
+    parsing
+};
 use diesel::{
     SqliteConnection,
     r2d2::{ConnectionManager, Pool},
@@ -17,14 +20,12 @@ use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 
-mod auth;
-mod deck;
-mod login;
-mod parser;
-mod register;
 mod data;
+mod deck;
+mod features;
+mod login;
+mod register;
 mod search;
-mod spaced_repetition_system;
 mod utils;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
@@ -41,7 +42,7 @@ async fn main() {
         .expect("Failed to create DB pool");
 
     // Dictionary data loading
-    let dict_data = Arc::new(parser::parse_cedict());
+    let dict_data = Arc::new(parsing::parse_cedict());
 
     // Templates configuration
     let template_path = format!("{}/src/templates/**/*.html", env!("CARGO_MANIFEST_DIR"));
