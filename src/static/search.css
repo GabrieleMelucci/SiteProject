@@ -1,0 +1,209 @@
+/* ===== SEARCH PAGE STYLES (Extracted from style.css) ===== */
+
+/* Base Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Search Form Elements */
+.autofocus,
+.lang-select {
+    background-color: #1a1a1a;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    height: 40px;
+    color: #d3d3d3;
+    font-size: 20px;
+    transition: border-color 0.3s ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.autofocus {
+    flex-grow: 1;
+    padding: 0 15px;
+}
+
+.lang-select {
+    width: auto;
+    padding: 0 10px;
+    margin-left: 0.3rem;
+}
+
+.autofocus:focus,
+.lang-select:focus {
+    border-color: #C1423F;
+    outline: none;
+}
+
+/* Search Results */
+#searchResults h2 {
+    color: #C1423F;
+    font-size: 2rem;
+    margin: 20px 0;
+    font-family: "Times New Roman", Times, serif;
+}
+
+.result-item {
+    background-color: #1e1e1e;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-left: 4px solid #C1423F;
+    transition: all 0.3s ease;
+}
+
+.result-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Character Display */
+.characters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.simplified,
+.traditional {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.pinyin {
+    color: #ff9999;
+    font-size: 1.2rem;
+}
+
+.definitions {
+    margin-top: 10px;
+}
+
+.definitions ul {
+    padding-left: 20px;
+    margin: 0;
+}
+
+/* Buttons */
+.add-to-deck-btn {
+    background-color: #C1423F;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+}
+
+.add-to-deck-btn:hover {
+    background-color: #702121;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+    background-color: #1e1e1e;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #C1423F;
+    width: 50%;
+    max-width: 500px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #ffffff;
+}
+
+/* Form Elements in Modal */
+.form-input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    background-color: #2a2a2a;
+    border: none;
+    border-radius: 5px;
+    color: #ffffff;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border 0.3s ease;
+}
+
+.form-input:focus {
+    border: 2px solid #C1423F;
+    outline: none;
+}
+
+.form-button {
+    background-color: #3498db;
+    border: none;
+    padding: 8px 24px;
+    color: white;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin: 20px auto 0;
+    display: block;
+}
+
+.form-button:hover {
+    background-color: #2980b9;
+}
+
+.new-deck-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #3e3e3e;
+}
+
+.new-deck-section h4 {
+    margin-bottom: 10px;
+    color: #d3d3d3;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 5%;
+    }
+
+    .characters {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .simplified,
+    .traditional {
+        font-size: 1.5rem;
+    }
+
+    .modal-content {
+        width: 80%;
+    }
+}

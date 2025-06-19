@@ -1,0 +1,95 @@
+/* ===== BASE STYLES ===== */
+body {
+    background-color: #232323;
+    color: #ffffff;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    padding: 0 12%;
+}
+
+#font {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    color: #ffffff;
+}
+
+/* ===== FOOTER STYLES ===== */
+footer {
+    font-family: "Times New Roman", Times, serif;
+    text-align: center;
+    font-size: 18px;
+}
+
+footer a {
+    padding: 5px;
+    position: relative;
+    text-decoration: none;
+    color: #C1423F;
+}
+
+footer a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0px;
+    left: 5%;
+    background-color: #ffffff;
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+footer a:hover {
+    color: #ffffff;
+}
+
+footer a:hover::after {
+    width: 90%;
+}
+
+/* ===== NAVIGATION STYLES ===== */
+.nav-logo {
+    display: inline-block;
+    text-decoration: none;
+    color: #C1423F;
+}
+
+.nav-item {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 120%;
+    text-decoration: none;
+    float: right;
+    text-align: end;
+    position: relative;
+    color: #C1423F;
+    bottom: -40px;
+    padding: 10px;
+}
+
+.nav-item::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0px;
+    left: 5%;
+    background-color: #ffffff;
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+.nav-item:hover {
+    color: #ffffff;
+}
+
+.nav-item:hover::after {
+    width: 90%;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 0 5%;
+    }
+
+    .nav-item {
+        padding: 20px;
+    }
+}

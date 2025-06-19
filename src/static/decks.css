@@ -1,0 +1,210 @@
+/* ===== DECK MANAGEMENT STYLES ===== */
+
+/* Base Containers */
+.deck-view,
+.deck-list {
+    max-width: 800px;
+    margin: 0; /* Changed from auto to remove centering */
+    padding: 20px;
+}
+
+/* Deck and Word Items */
+.result-item,
+.word-item {
+    background-color: #1e1e1e;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-left: 4px solid #C1423F;
+    transition: all 0.3s ease;
+}
+
+.result-item:hover,
+.word-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Character Display */
+.characters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.simplified,
+.traditional {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.pinyin {
+    color: #ff9999;
+    font-size: 1.2rem;
+}
+
+.definitions {
+    margin-top: 10px;
+}
+
+.definitions ul {
+    padding-left: 20px;
+    margin: 0;
+}
+
+/* Buttons */
+.view-deck-btn,
+.study-deck-btn,
+.delete-deck-btn,
+.delete-word-btn,
+.btn {
+    background-color: #C1423F;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.view-deck-btn:hover,
+.study-deck-btn:hover,
+.delete-deck-btn:hover,
+.delete-word-btn:hover,
+.btn:hover {
+    background-color: #702121;
+}
+
+/* Deck Actions */
+.deck-actions {
+    display: flex;
+    justify-content: flex-start; /* Changed from space-between */
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.privacy-toggle {
+    display: inline-block;
+    margin: 0 10px;
+}
+
+.privacy-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+    background-color: #1e1e1e;
+    margin: 15% auto; /* Keeping modal centered as it's standard UX practice */
+    padding: 20px;
+    border: 1px solid #C1423F;
+    width: 50%;
+    max-width: 500px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #ffffff;
+}
+
+/* Form Elements */
+.form-input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    background-color: #2a2a2a;
+    border: none;
+    border-radius: 5px;
+    color: #ffffff;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: border 0.3s ease;
+}
+
+.form-input:focus {
+    border: 2px solid #C1423F;
+    outline: none;
+}
+
+.form-button {
+    background-color: #3498db;
+    border: none;
+    padding: 8px 24px;
+    color: white;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin: 20px auto 0;
+    display: block;
+}
+
+.form-button:hover {
+    background-color: #2980b9;
+}
+
+.new-deck-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #3e3e3e;
+}
+
+/* Error States */
+.error {
+    color: #ff6b6b;
+    padding: 15px;
+    background-color: #2a2a2a;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .characters {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .simplified,
+    .traditional {
+        font-size: 1.5rem;
+    }
+
+    .deck-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .modal-content {
+        width: 80%;
+    }
+}

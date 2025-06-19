@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block head %}
+<link rel="stylesheet" href="/static/dashboard.css">
+{% endblock %}
+
 {% block content %}
 <div class="container bugfix">
     <form id="mainSearchForm" action="/search" method="get" style="margin: 0;">

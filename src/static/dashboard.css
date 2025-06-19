@@ -1,0 +1,135 @@
+/* ===== DASHBOARD STYLES (Extracted from style.css) ===== */
+
+/* Base Container */
+.container.bugfix {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Search Form Elements */
+.autofocus,
+.lang-select {
+    background-color: #1a1a1a;
+    border-radius: 5px;
+    border: 2px solid transparent;
+    height: 40px;
+    color: #d3d3d3;
+    font-size: 20px;
+    transition: border-color 0.3s ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+.autofocus {
+    width: 80%;
+    padding: 0 15px;
+}
+
+.lang-select {
+    width: auto;
+    padding: 0 10px;
+}
+
+.autofocus:focus,
+.lang-select:focus {
+    border-color: #C1423F;
+    outline: none;
+}
+
+/* Dashboard Section */
+.dashboard-section {
+    margin: 40px 0;
+    text-align: center;
+}
+
+.dashboard-section h1,
+.dashboard-section h2 {
+    color: #ffffff;
+    font-family: "Times New Roman", Times, serif;
+    margin-bottom: 20px;
+}
+
+/* Dashboard Buttons */
+.dashboard-button {
+    font-family: "Times New Roman", Times, serif;
+    text-align: center;
+    font-size: 18px;
+    padding: 8px 16px;
+    margin: 0 10px;
+    position: relative;
+    text-decoration: none;
+    color: #C1423F;
+    background-color: transparent;
+    border: 1px solid #C1423F;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.dashboard-button:hover {
+    color: #ffffff;
+    background-color: #C1423F;
+}
+
+.dashboard-button::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 5%;
+    background-color: #ffffff;
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+.dashboard-button:hover::after {
+    width: 90%;
+}
+
+/* Badge Style */
+.badge {
+    display: inline-block;
+    background-color: #C1423F;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    margin-left: 5px;
+}
+
+.badge.has-due {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Dashboard Actions Container */
+.dashboard-actions {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .container.bugfix {
+        padding: 0 5%;
+    }
+
+    .dashboard-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .dashboard-button {
+        margin: 5px 0;
+        width: 80%;
+    }
+}
