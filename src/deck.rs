@@ -8,8 +8,8 @@ use diesel::sql_types::Integer;
 use chrono::{NaiveDateTime, Utc};
 use crate::{
     DbPool,
-    data::schema::{deck_words, decks, words, srs_reviews},
-    data::models::{Deck, DeckWithWords, DeckWord, DeckId, CreateDeckRequest, AddWordRequest, ApiResponse, Word, StudyWord, ReviewRequest, UpdatePrivacyRequest},
+    data::schema::{deck_words, decks, words, users, srs_reviews},
+    data::models::{Deck, DeckWithWords, DeckWithCreator, DeckWord, DeckId, CreateDeckRequest, AddWordRequest, ApiResponse, Word, StudyWord, ReviewRequest, UpdatePrivacyRequest},
     utils,
     features::srs::SrsEngine 
 };
@@ -692,4 +692,41 @@ pub async fn update_deck_privacy(
         success: true,
         message: "Privacy setting updated successfully".to_string(),
     }))
+}
+
+/// Lists all public decks ordered by like count
+pub async fn list_public_decks(
+    State(pool): State<DbPool>,
+) -> Result<Json<Vec<DeckWithCreator>>, (StatusCode, String)> {
+    let mut conn = pool.get().map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+    })?;
+
+    // Query public decks with creator info, ordered by like count
+    let decks = decks::table
+        .filter(decks::privacy_value.eq(true)) // Only public decks
+        .inner_join(users::table)
+        .select((
+            decks::deck_id,
+            decks::deck_name,
+            decks::like_count,
+            decks::user_id,
+            users::email,
+        ))
+        .order_by(decks::like_count.desc()) // Order by like count descending
+        .load::<(i32, String, i32, i32, String)>(&mut conn)
+        .map_err(|e| {
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", e))
+        })?
+        .into_iter()
+        .map(|(id, name, like_count, user_id, creator_email)| DeckWithCreator {
+            id,
+            name,
+            like_count,
+            user_id,
+            creator_email,
+        })
+        .collect();
+
+    Ok(Json(decks))
 }

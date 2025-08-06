@@ -1,5 +1,131 @@
 {% extends "base.html" %}
 
+{% block head %}
+<link rel="stylesheet" href="/static/decks.css">
+{% endblock %}
+
 {% block content %}
+
+  <h2>Popular User Decks</h2>
+
+  <div class="deck-list" id="decksContainer"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loggedIn = {{ logged_in | default(value=false) }};
+      const currentUserId = {{ user_id | default(value="null") }};
+      const decksContainer = document.getElementById('decksContainer');
+      
+      if (!loggedIn || !currentUserId) {
+        decksContainer.innerHTML = `
+          <div class="result-item">
+            <p>Please <a href="/auth/login">log in</a> to view public decks.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Function to fetch and display public decks ordered by likes
+      function fetchPublicDecks() {
+        fetch('/api/decks/public_decks')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(response.status === 401 
+                ? 'Session expired. Please log in again.' 
+                : 'Failed to fetch public decks');
+            }
+            return response.json();
+          })
+          .then(decks => {
+            if (decks.length === 0) {
+              decksContainer.innerHTML = `
+                <div class="result-item">
+                  <p>No public decks available yet.</p>
+                </div>
+              `;
+              return;
+            }
+
+            decksContainer.innerHTML = '';
+            
+            // Add public decks sorted by like count
+            decks.forEach(deck => {
+              const deckElement = document.createElement('div');
+              deckElement.className = 'result-item';
+              deckElement.innerHTML = `
+                <h3>${deck.name}</h3>
+                <p>Created by: ${deck.creator_email}</p>
+                <p>Likes: ${deck.like_count}</p>
+                <div class="deck-actions">
+                  <button class="view-deck-btn" data-deck-id="${deck.id}">
+                    View Deck
+                  </button>
+                  <button class="study-deck-btn" data-deck-id="${deck.id}">
+                    Study Deck
+                  </button>
+                  ${deck.user_id === currentUserId ? `
+                    <button class="delete-deck-btn" data-deck-id="${deck.id}">
+                      Delete Deck
+                    </button>
+                  ` : ''}
+                </div>
+                <hr>
+              `;
+              decksContainer.appendChild(deckElement);
+            });
+
+            // Add event listeners to all deck buttons
+            document.querySelectorAll('.view-deck-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                window.location.href = `/deck/${this.dataset.deckId}`;
+              });
+            });
+
+            document.querySelectorAll('.study-deck-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                window.location.href = `/deck/${this.dataset.deckId}/study`;
+              });
+            });
+
+            document.querySelectorAll('.delete-deck-btn').forEach(button => {
+              button.addEventListener('click', async function() {
+                if (confirm('Are you sure you want to delete this deck?')) {
+                  try {
+                    const response = await fetch(`/api/decks/${this.dataset.deckId}`, {
+                      method: 'DELETE',
+                      credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                      fetchPublicDecks(); // Refresh the list after deletion
+                    } else {
+                      const error = await response.json();
+                      alert(error.message || 'Failed to delete deck');
+                    }
+                  } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error deleting deck');
+                  }
+                }
+              });
+            });
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            decksContainer.innerHTML = `
+              <div class="result-item error">
+                <p>${error.message}</p>
+                ${error.message.includes('expired') 
+                  ? '<a href="/auth/login" class="login-link">Login Page</a>' 
+                  : '<button onclick="fetchPublicDecks()">Retry</button>'}
+              </div>
+            `;
+          });
+      }
+
+      // Initial fetch of public decks
+      fetchPublicDecks();
+    });
+  </script>
 
 {% endblock %}

@@ -119,9 +119,6 @@
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
-    .container.bugfix {
-        padding: 0 5%;
-    }
 
     .dashboard-actions {
         flex-direction: column;

@@ -1,4 +1,5 @@
-DROP TABLE users;
-DROP TABLE decks;
-DROP TABLE words;
-DROP TABLE deck_words;
+DROP TABLE IF EXISTS srs_reviews;
+DROP TABLE IF EXISTS deck_words;
+DROP TABLE IF EXISTS words;
+DROP TABLE IF EXISTS decks;
+DROP TABLE IF EXISTS users;

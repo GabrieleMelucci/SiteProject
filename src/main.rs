@@ -27,7 +27,7 @@ mod utils;
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     // Database configuration
     dotenv::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://site.db".into());
@@ -54,7 +54,7 @@ async fn main() {
         .with_expiry(Expiry::OnInactivity(Duration::days(1)))
         .with_secure(false);
 
-    // Build routers
+    // Build routers with proper state management
     let deck_api_router = Router::new()
         .route("/", get(deck::list_decks))
         .route("/{deck_id}", delete(deck::delete_deck))
@@ -68,6 +68,7 @@ async fn main() {
         .route("/due-count", get(deck::get_due_words_count))
         .route("/{deck_id}/words/{word_id}/review", post(deck::record_word_review))
         .route("/{deck_id}", get(deck::view_deck))
+        .route("/public", get(deck::list_public_decks))
         .with_state(pool.clone())
         .layer(session_layer.clone());
 
@@ -79,61 +80,44 @@ async fn main() {
     let api_router = Router::new()
         .nest("/decks", deck_api_router)
         .nest("/search", search_api_router)
+        .with_state(pool.clone())
         .layer(session_layer.clone());
 
     let auth_router = Router::new()
-        .merge(login::auth_router(pool.clone(), templates.clone()))
-        .merge(register::auth_router(pool.clone(), templates.clone()))
-        .route("/logout", get(handle_logout))
-        .layer(session_layer.clone());
+            .merge(login::auth_router(pool.clone(), templates.clone()))
+            .merge(register::auth_router(pool.clone(), templates.clone()))
+            .route("/logout", get(handle_logout))
+            .layer(session_layer.clone());
 
     // Main application router
     let app = Router::new()
-        // Root route with auth-aware redirection
         .route("/", get(root_handler))
-        // Static pages
         .route("/about", get(about))
         .route("/changelog", get(changelog))
         .route("/privacy-policy", get(privacy_policy))
         .route("/terms-of-use", get(terms_of_use))
-        // Search page
         .route("/search", get(search::search_page))
-        // Dashboard
         .route("/dashboard", get(dashboard))
-        // Public Decks management
         .route("/public-decks", get(public_decks_management))
-        // Decks management
         .route("/decks", get(decks_management))
         .route("/deck/{deck_id}", get(deck_view_page))
         .route("/decks/study", get(due_reviews_page))
         .route("/deck/{deck_id}/study", get(study_page))
-        // Auth routes
         .nest("/auth", auth_router)
-        // API routes
         .nest("/api", api_router)
-        // Static files
         .nest_service("/static", get_service(ServeDir::new("src/static")))
-        // Shared state and layers
         .layer(Extension(templates))
         .layer(session_layer);
 
     // Start server
-    let listener = TcpListener::bind("127.0.0.1:5000")
-        .await
-        .unwrap_or_else(|e| {
-            eprintln!("Failed to bind to address: {}", e);
-            std::process::exit(1);
-        });
-
+    let listener = TcpListener::bind("127.0.0.1:5000").await?;
     println!("Server running on http://localhost:5000");
+    axum::serve(listener, app).await?;
 
-    axum::serve(listener, app).await.unwrap_or_else(|e| {
-        eprintln!("Server error: {}", e);
-        std::process::exit(1);
-    });
+    Ok(())
 }
 
-// Handlers
+// Handlers (unchanged from your original version)
 async fn root_handler(
     Extension(templates): Extension<Arc<Tera>>,
     session: tower_sessions::Session,
@@ -247,7 +231,6 @@ async fn deck_view_page(
     utils::render_template(&templates, "view-deck.html", context).into_response()
 }
 
-// Handler for studying a specific deck
 pub async fn study_page(
     Path(deck_id): Path<i32>,
     Extension(templates): Extension<Arc<Tera>>,
@@ -266,7 +249,6 @@ pub async fn study_page(
     }
 }
 
-// Handler for due reviews (no deck ID)
 pub async fn due_reviews_page(
     Extension(templates): Extension<Arc<Tera>>,
     session: tower_sessions::Session,

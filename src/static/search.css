@@ -188,9 +188,6 @@
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
-    .container {
-        padding: 0 5%;
-    }
 
     .characters {
         flex-direction: column;

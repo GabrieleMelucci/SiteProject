@@ -88,3 +88,12 @@ pub struct ReviewRequest {
 pub struct UpdatePrivacyRequest {
     pub privacy_value: bool,
 }
+
+#[derive(Serialize)]
+pub struct DeckWithCreator {
+    pub id: i32,
+    pub name: String,
+    pub like_count: i32,
+    pub user_id: i32,
+    pub creator_email: String,
+}
